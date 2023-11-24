@@ -3,15 +3,17 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.authtoken.models import Token
-from .serializers import UserRegisterSerializer
+from .serializers import UserRegisterSerializer,UserAccountSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 # from django.contrib.auth.models import User
 from django.contrib import messages
 from django.contrib.auth import authenticate, login
 from .models import UserAccount
 
+
+
 @api_view(["POST",])
-def logout_user(request):
+def logout_user(request): 
     if request.method == "POST":
         request.user.auth_token.delete()
         return Response({"Message": "You are logged out"}, status=status.HTTP_200_OK)
@@ -78,4 +80,46 @@ def user_login_view(request):
         except ValueError as e:
             data = {'error': str(e)}
             return Response(data, status=status.HTTP_400_BAD_REQUEST)
-        
+    
+    
+#Thêm nhân viên
+@api_view(['POST'])
+def add_employee(request):
+    if request.method == 'POST':
+        serializer = UserAccountSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+#sửa thông tin nhân viên
+@api_view(['PUT'])
+def update_employee(request, pk):
+    try:
+        employee = UserAccount.objects.get(user_id=pk)
+    except UserAccount.DoesNotExist:
+        return Response({"message": "Employee not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == 'PUT':
+        serializer = UserAccountSerializer(employee, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    
+#xóa nhân viên
+@api_view(['DELETE'])
+def delete_employee(request, pk):
+    try:
+        employee = UserAccount.objects.get(user_id=pk)
+    except UserAccount.DoesNotExist:
+        return Response({"message": "Employee not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == 'DELETE':
+        employee.delete()
+        return Response({"message": "Employee deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
+
+

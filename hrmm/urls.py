@@ -1,12 +1,16 @@
 # from django.views.generic import TemplateView
 from django.contrib import admin
 from django.urls import path,include,re_path
+# from rest_framework_swagger.views import get_swagger_view
+
+# schema_view = get_swagger_view(title='Pastebin API')
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('auth/',include('djoser.urls')),
     path('auth/',include('djoser.urls.jwt')),
-    path('',include('base.urls'))
+    path('',include('base.urls')),
+    # path('', schema_view),
 ]
 
 
