@@ -13,8 +13,8 @@ def delete_leavetype(request, pk):
         return Response({"message": "Leave type not found"}, status=status.HTTP_404_NOT_FOUND)
 
     if request.method == 'DELETE':
-        leave_type_id = leave_type.leave_type_id
-        if leave_type_id is not None and not Leave_Type.objects.filter(leave_type_id=leave_type_id).exists():
+        leave_type_delete = leave_type.leave_type_id
+        if leave_type_delete is not None and not Leave_Type.objects.filter(leave_type_id=leave_type_delete).exists():
             return Response({"error": "Leave type not found"}, status=status.HTTP_400_BAD_REQUEST)
 
         
@@ -47,7 +47,6 @@ def update_leavetype(request, pk):
     if request.method == 'PUT':
         serializer = LeaveTypeSerializer(leave_type, data=request.data)
         if serializer.is_valid():
-            # Kiểm tra sự tồn tại của leave_type_id trong Leave
             leave_type_id = request.data.get('leave_type_id', None)
             if leave_type_id is not None and not Leave.objects.filter(leave_type_id=leave_type_id).exists():
                 return Response({"error": "Leave type not found in Leave"}, status=status.HTTP_400_BAD_REQUEST)

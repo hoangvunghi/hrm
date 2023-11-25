@@ -8,16 +8,16 @@ from .serializers import LeaveSerializer
 @api_view(['DELETE'])
 def delete_leave(request, pk):
     try:
-        leave = Leave.objects.get(leave_id=pk)
+        leavedelete = Leave.objects.get(leave_id=pk)
     except Leave.DoesNotExist:
         return Response({"message": "Leave not found"}, status=status.HTTP_404_NOT_FOUND)
 
     if request.method == 'DELETE':
-        leave_id = leave.leave_id
-        if leave_id is not None and not UserAccount.objects.filter(user_id=leave_id).exists():
+        leave = leavedelete.leave_id
+        if leave is not None and not UserAccount.objects.filter(user_id=leave).exists():
             return Response({"error": "Leave not found"}, status=status.HTTP_400_BAD_REQUEST)
         
-        leave.delete()
+        leavedelete.delete()
         return Response({"message": "Leave deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
 
 
@@ -27,8 +27,8 @@ def create_leave(request):
     if request.method == 'POST':
         serializer = LeaveSerializer(data=request.data)
         if serializer.is_valid():
-            leave_id = request.data.get('leave_id', None) 
-            if leave_id is not None and not Leave.objects.filter(leave_id=leave_id).exists():
+            user_id = request.data.get('leave_id', None) 
+            if user_id is not None and not UserAccount.objects.filter(user_id=user_id).exists():
                 return Response({"error": "Leave not found"}, status=status.HTTP_400_BAD_REQUEST)
             
             serializer.save()
@@ -47,7 +47,7 @@ def update_leave(request, pk):
         serializer = LeaveSerializer(leave, data=request.data)
         if serializer.is_valid():
             leave_id = request.data.get('leave_id', None) 
-            if leave_id is not None and not Leave.objects.filter(leave_id=leave_id).exists():
+            if leave_id is not None and not UserAccount.objects.filter(user_id=leave_id).exists():
                 return Response({"error": "Leave not found"}, status=status.HTTP_400_BAD_REQUEST)
             
             serializer.save()

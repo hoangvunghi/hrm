@@ -27,7 +27,7 @@ def create_department(request):
     if request.method == 'POST':
         serializer = DepartmentSerializer(data=request.data)
         if serializer.is_valid():
-            manager_id = request.data.get('manager', None)
+            manager_id = request.data.get('manager_id', None)
             if manager_id is not None and not UserAccount.objects.filter(user_id=manager_id).exists():
                 return Response({"error": "Manager not found"}, status=status.HTTP_400_BAD_REQUEST)
             
@@ -46,7 +46,7 @@ def update_department(request, pk):
     if request.method == 'PUT':
         serializer = DepartmentSerializer(department, data=request.data)
         if serializer.is_valid():
-            manager_id = request.data.get('manager', None)
+            manager_id = request.data.get('manager_id', None)
             if manager_id is not None and not UserAccount.objects.filter(user_id=manager_id).exists():
                 return Response({"error": "Manager not found"}, status=status.HTTP_400_BAD_REQUEST)
             
