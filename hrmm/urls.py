@@ -10,6 +10,8 @@ urlpatterns = [
     path('auth/',include('djoser.urls')),
     path('auth/',include('djoser.urls.jwt')),
     path('',include('base.urls')),
+    path('',include('department.urls')),
+    
     # path('', schema_view),
 ]
 

@@ -1,7 +1,7 @@
 from djoser.serializers import UserCreateSerializer
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
-from .models import UserAccount
+from .models import UserAccount,Department
 
 User=get_user_model()
 
@@ -40,4 +40,11 @@ class UserRegisterSerializer(serializers.ModelSerializer):
 class UserAccountSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserAccount
+        fields = '__all__'
+
+
+
+class DepartmentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Department
         fields = '__all__'
