@@ -43,7 +43,9 @@ INSTALLED_APPS = [
     'leave_type.apps.LeaveTypeConfig',
     'rest_framework',
     'djoser',
-    'rest_framework_swagger'
+    'rest_framework_swagger',
+    'attendance.apps.AttendanceConfig',
+    'position.apps.PositionConfig',
     
 ]
 

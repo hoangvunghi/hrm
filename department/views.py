@@ -13,27 +13,25 @@ def delete_department(request, pk):
         return Response({"message": "Department not found"}, status=status.HTTP_404_NOT_FOUND)
 
     if request.method == 'DELETE':
-        manager_id = department.manager_id
-        if manager_id is not None and not UserAccount.objects.filter(user_id=manager_id).exists():
-            return Response({"error": "Manager not found"}, status=status.HTTP_400_BAD_REQUEST)
-        
-        department.delete()
-        return Response({"message": "Department deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
-
-
+        if department.department_id is not None:
+            department.delete()
+            return Response({"message": "Department deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
+        else:
+            return Response({"error": "Invalid department_id"}, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['POST'])
 def create_department(request):
-    if request.method == 'POST':
-        serializer = DepartmentSerializer(data=request.data)
-        if serializer.is_valid():
-            manager_id = request.data.get('manager_id', None)
-            if manager_id is not None and not UserAccount.objects.filter(user_id=manager_id).exists():
-                return Response({"error": "Manager not found"}, status=status.HTTP_400_BAD_REQUEST)
-            
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    serializer = DepartmentSerializer(data=request.data)
+    if serializer.is_valid():
+        department_id = request.data.get('department_id', None)
+
+        if Department.objects.filter(department_id=department_id).exists():
+            return Response({"error": "Department with this department_id already exists"}, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer.save()
+        return Response({"message": "Department created successfully"}, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 
 @api_view(['PATCH'])
@@ -43,12 +41,12 @@ def update_department(request, pk):
     except Department.DoesNotExist:
         return Response({"message": "Department not found"}, status=status.HTTP_404_NOT_FOUND)
 
-    if request.method == 'PUT':
+    if request.method == 'PATCH':
         serializer = DepartmentSerializer(department, data=request.data)
         if serializer.is_valid():
-            manager_id = request.data.get('manager_id', None)
-            if manager_id is not None and not UserAccount.objects.filter(user_id=manager_id).exists():
-                return Response({"error": "Manager not found"}, status=status.HTTP_400_BAD_REQUEST)
+            user_id = request.data.get('user_id', None)
+            if user_id is not None and not UserAccount.objects.filter(user_id=user_id).exists():
+                return Response({"error": "UserAccount not found"}, status=status.HTTP_400_BAD_REQUEST)
             
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)

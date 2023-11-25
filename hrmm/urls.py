@@ -13,6 +13,8 @@ urlpatterns = [
     path('',include('department.urls')),
     path('',include('leave.urls')),
     path('',include('leave_type.urls')),
+    path('',include('attendance.urls')),
+    path('',include('position.urls')),
     
     
     # path('', schema_view),

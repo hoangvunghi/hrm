@@ -97,14 +97,14 @@ def add_employee(request):
 
 
 #sửa thông tin nhân viên
-@api_view(['PUT'])
+@api_view(['PATCH'])
 def update_employee(request, pk):
     try:
         employee = UserAccount.objects.get(user_id=pk)
     except UserAccount.DoesNotExist:
         return Response({"message": "Employee not found"}, status=status.HTTP_404_NOT_FOUND)
 
-    if request.method == 'PUT':
+    if request.method == 'PATCH':
         serializer = UserAccountSerializer(employee, data=request.data)
         if serializer.is_valid():
             serializer.save()
