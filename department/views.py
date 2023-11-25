@@ -36,7 +36,7 @@ def create_department(request):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-@api_view(['PUT'])
+@api_view(['PATCH'])
 def update_department(request, pk):
     try:
         department = Department.objects.get(department_id=pk)

@@ -36,7 +36,7 @@ def create_leave(request):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-@api_view(['PUT'])
+@api_view(['PATCH'])
 def update_leave(request, pk):
     try:
         leave = Leave.objects.get(leave_id=pk)
