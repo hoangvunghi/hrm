@@ -39,7 +39,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'base.apps.BaseConfig',
     'department.apps.DepartmentConfig',
-
+    'leave.apps.LeaveConfig',
+    'leave_type.apps.LeaveTypeConfig',
     'rest_framework',
     'djoser',
     'rest_framework_swagger'
