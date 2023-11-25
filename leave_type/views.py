@@ -1,12 +1,6 @@
-from django.shortcuts import render
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.authtoken.models import Token
-from rest_framework_simplejwt.tokens import RefreshToken
-# from django.contrib.auth.models import User
-from django.contrib import messages
-from django.contrib.auth import authenticate, login
 from base.models import Leave,Leave_Type
 from .serializers import LeaveTypeSerializer
 # Create your views here.
