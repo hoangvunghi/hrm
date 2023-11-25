@@ -81,10 +81,17 @@ class Department(models.Model):
     department_name = models.CharField(max_length=200)
     manager = models.ForeignKey(UserAccount, on_delete=models.SET_NULL, null=True)
 
+class Leave_Type(models.Model):
+    leave_type_id = models.AutoField(primary_key=True)
+    leave_type = models.CharField(max_length=200)
+    
+    def __str__(self):
+        return self.leave_type
+    
 class Leave(models.Model):
     leave_id = models.AutoField(primary_key=True)
     employee = models.ForeignKey(UserAccount, on_delete=models.CASCADE)
-    leave_type_id = models.ForeignKey('Leave_Type', on_delete=models.SET_NULL, null=True)
+    leave_type_id = models.ForeignKey(Leave_Type, on_delete=models.SET_NULL, null=True)
     start_date = models.DateField()
     end_date = models.DateField()
     reason = models.CharField(max_length=500)
@@ -103,9 +110,4 @@ class Leave(models.Model):
     def __str__(self):
         return str(self.employee)
 
-class Leave_Type(models.Model):
-    leave_type_id = models.AutoField(primary_key=True)
-    leave_type = models.CharField(max_length=200)
-    
-    def __str__(self):
-        return self.leave_type
+
