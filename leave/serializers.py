@@ -7,3 +7,6 @@ class LeaveSerializer(serializers.ModelSerializer):
     class Meta:
         model = Leave
         fields = '__all__'
+        extra_kwargs = {
+            'leave_type_id': {'required': True}  
+        }
