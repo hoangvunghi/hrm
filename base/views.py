@@ -1,26 +1,21 @@
-from django.shortcuts import render
-from rest_framework.decorators import api_view
+from django.shortcuts import get_object_or_404
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import status, permissions
 from rest_framework.authtoken.models import Token
-from .serializers import UserRegisterSerializer,UserAccountSerializer
+from .serializers import UserRegisterSerializer, UserAccountSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
-# from django.contrib.auth.models import User
-from django.contrib import messages
 from django.contrib.auth import authenticate, login
-from .models import UserAccount,Department
-from .serializers import DepartmentSerializer
+from .models import UserAccount, Department
+from base.permission import IsAdminOrReadOnly, IsOwnerOrReadonly
 
-
-
-
-@api_view(["POST",])
+@api_view(["POST"])
 def logout_user(request): 
     if request.method == "POST":
         request.user.auth_token.delete()
         return Response({"Message": "You are logged out"}, status=status.HTTP_200_OK)
 
-@api_view(["POST",])
+@api_view(["POST"])
 def user_register_view(request):
     if request.method == "POST":
         serializer = UserRegisterSerializer(data=request.data)
@@ -40,9 +35,8 @@ def user_register_view(request):
         else:
             data = serializer.errors
         return Response(data)
-    
 
-@api_view(["POST",])
+@api_view(["POST"])
 def user_login_view(request):
     if request.method == "POST":
         try:
@@ -82,47 +76,44 @@ def user_login_view(request):
         except ValueError as e:
             data = {'error': str(e)}
             return Response(data, status=status.HTTP_400_BAD_REQUEST)
-    
-    
-#Thêm nhân viên
-@api_view(['POST'])
-def add_employee(request):
-    if request.method == 'POST':
-        serializer = UserAccountSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
-
-#sửa thông tin nhân viên
-@api_view(['PATCH'])
-def update_employee(request, pk):
-    try:
-        employee = UserAccount.objects.get(user_id=pk)
-    except UserAccount.DoesNotExist:
-        return Response({"message": "Employee not found"}, status=status.HTTP_404_NOT_FOUND)
-
-    if request.method == 'PATCH':
-        serializer = UserAccountSerializer(employee, data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
-    
-#xóa nhân viên
 @api_view(['DELETE'])
+@permission_classes([permissions.IsAuthenticatedOrReadOnly, IsAdminOrReadOnly])
 def delete_employee(request, pk):
-    try:
-        employee = UserAccount.objects.get(user_id=pk)
-    except UserAccount.DoesNotExist:
-        return Response({"message": "Employee not found"}, status=status.HTTP_404_NOT_FOUND)
+    employee = get_object_or_404(UserAccount, user_id=pk)
 
     if request.method == 'DELETE':
         employee.delete()
         return Response({"message": "Employee deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
+    
 
 
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticatedOrReadOnly, IsAdminOrReadOnly])
+def create_employee(request):
+    serializer = UserAccountSerializer(data=request.data)
+    if serializer.is_valid():
+        user_id = request.data.get('user_id', None)
 
+        if UserAccount.objects.filter(user_id=user_id).exists():
+            return Response({"error": "User with this user_id already exists"}, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer.save()
+        return Response({"message": "User created successfully"}, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['PATCH'])
+@permission_classes([permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadonly])
+def update_employee(request, pk):
+    employee = get_object_or_404(UserAccount, user_id=pk)
+
+    if request.method == 'PATCH':
+        serializer = UserAccountSerializer(employee, data=request.data)
+        if serializer.is_valid():
+            user_id = request.data.get('user_id', None)
+            if user_id is not None and not UserAccount.objects.filter(user_id=user_id).exists():
+                return Response({"error": "Employee not found"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

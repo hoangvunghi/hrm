@@ -1,16 +1,16 @@
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view,permission_classes
 from rest_framework.response import Response
 from rest_framework import status
 from base.models import UserAccount,Leave
 from .serializers import LeaveSerializer
-# Create your views here.
+from django.shortcuts import get_object_or_404
+from rest_framework import permissions
+from base.permission import IsAdminOrReadOnly,IsOwnerOrReadonly
 
 @api_view(['DELETE'])
+@permission_classes([permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadonly])
 def delete_leave(request, pk):
-    try:
-        leave = Leave.objects.get(leave_id=pk)
-    except Leave.DoesNotExist:
-        return Response({"message": "Leave not found"}, status=status.HTTP_404_NOT_FOUND)
+    leave = get_object_or_404(Leave, leave_id=pk)
 
     if request.method == 'DELETE':
         if leave.leave_id is not None:
@@ -19,8 +19,8 @@ def delete_leave(request, pk):
         else:
             return Response({"error": "Invalid leave_id"}, status=status.HTTP_400_BAD_REQUEST)
 
-
 @api_view(['POST'])
+@permission_classes([permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadonly])
 def create_leave(request):
     serializer = LeaveSerializer(data=request.data)
     if serializer.is_valid():
@@ -33,14 +33,10 @@ def create_leave(request):
         return Response({"message": "Leave created successfully"}, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
-
 @api_view(['PATCH'])
+@permission_classes([permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadonly])
 def update_leave(request, pk):
-    try:
-        leave = Leave.objects.get(leave_id=pk)
-    except Leave.DoesNotExist:
-        return Response({"message": "Leave not found"}, status=status.HTTP_404_NOT_FOUND)
+    leave = get_object_or_404(Leave, leave_id=pk)
 
     if request.method == 'PATCH':
         serializer = LeaveSerializer(leave, data=request.data)

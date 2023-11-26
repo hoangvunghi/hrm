@@ -1,16 +1,16 @@
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view,permission_classes
 from rest_framework.response import Response
 from rest_framework import status
 from base.models import UserAccount,Leave,Leave_Type
 from .serializers import LeaveTypeSerializer
-# Create your views here.
+from rest_framework import permissions
+from base.permission import IsAdminOrReadOnly,IsOwnerOrReadonly
+from django.shortcuts import get_object_or_404
 
 @api_view(['DELETE'])
+@permission_classes([permissions.IsAuthenticatedOrReadOnly, IsAdminOrReadOnly])
 def delete_leavetype(request, pk):
-    try:
-        leavetype = Leave_Type.objects.get(department_id=pk)
-    except Leave_Type.DoesNotExist:
-        return Response({"message": "Leavetype not found"}, status=status.HTTP_404_NOT_FOUND)
+    leavetype = get_object_or_404(Leave_Type, leave_type_id=pk)
 
     if request.method == 'DELETE':
         if leavetype.leave_type_id is not None:
@@ -19,8 +19,8 @@ def delete_leavetype(request, pk):
         else:
             return Response({"error": "Invalid leave_type_id"}, status=status.HTTP_400_BAD_REQUEST)
 
-
 @api_view(['POST'])
+@permission_classes([permissions.IsAuthenticatedOrReadOnly, IsAdminOrReadOnly])
 def create_leavetype(request):
     serializer = LeaveTypeSerializer(data=request.data)
     if serializer.is_valid():
@@ -33,14 +33,10 @@ def create_leavetype(request):
         return Response({"message": "Leavetype created successfully"}, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
-
 @api_view(['PATCH'])
+@permission_classes([permissions.IsAuthenticatedOrReadOnly, IsAdminOrReadOnly])
 def update_leavetype(request, pk):
-    try:
-        leavetype = Leave_Type.objects.get(department_id=pk)
-    except Leave_Type.DoesNotExist:
-        return Response({"message": "Leavetype not found"}, status=status.HTTP_404_NOT_FOUND)
+    leavetype = get_object_or_404(Leave_Type, leave_type_id=pk)
 
     if request.method == 'PATCH':
         serializer = LeaveTypeSerializer(leavetype, data=request.data)

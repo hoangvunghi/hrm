@@ -1,16 +1,16 @@
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view,permission_classes
 from rest_framework.response import Response
 from rest_framework import status
 from base.models import UserAccount,Leave,Leave_Type,Positions
 from .serializers import PositionsSerializer
-# Create your views here.
+from rest_framework import permissions
+from base.permission import IsAdminOrReadOnly,IsOwnerOrReadonly
+from django.shortcuts import get_object_or_404
 
 @api_view(['DELETE'])
+@permission_classes([permissions.IsAuthenticatedOrReadOnly, IsAdminOrReadOnly])
 def delete_position(request, pk):
-    try:
-        position = Positions.objects.get(position_id=pk)
-    except Positions.DoesNotExist:
-        return Response({"message": "Position not found"}, status=status.HTTP_404_NOT_FOUND)
+    position = get_object_or_404(Positions, position_id=pk)
 
     if request.method == 'DELETE':
         if position.position_id is not None:
@@ -19,8 +19,8 @@ def delete_position(request, pk):
         else:
             return Response({"error": "Invalid position_id"}, status=status.HTTP_400_BAD_REQUEST)
 
-
 @api_view(['POST'])
+@permission_classes([permissions.IsAuthenticatedOrReadOnly, IsAdminOrReadOnly])
 def create_position(request):
     serializer = PositionsSerializer(data=request.data)
     if serializer.is_valid():
@@ -33,14 +33,10 @@ def create_position(request):
         return Response({"message": "Position created successfully"}, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
-
 @api_view(['PATCH'])
+@permission_classes([permissions.IsAuthenticatedOrReadOnly, IsAdminOrReadOnly])
 def update_position(request, pk):
-    try:
-        position = Positions.objects.get(position_id=pk)
-    except Positions.DoesNotExist:
-        return Response({"message": "Position not found"}, status=status.HTTP_404_NOT_FOUND)
+    position = get_object_or_404(Positions, position_id=pk)
 
     if request.method == 'PATCH':
         serializer = PositionsSerializer(position, data=request.data)
