@@ -33,8 +33,8 @@ class UserAccount(AbstractBaseUser, PermissionsMixin):
     last_name = models.CharField(max_length=50)
     phone_number = models.CharField(max_length=15)
     address = models.CharField(max_length=200)
-    date_of_birth = models.DateField()
-    date_of_hire = models.DateField()
+    date_of_birth = models.DateField(null=True)
+    date_of_hire = models.DateField(auto_now=True)
     position_id = models.ForeignKey(Positions, on_delete=models.SET_NULL, null=True)
     
     STATUS_CHOICES = [

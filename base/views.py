@@ -9,7 +9,7 @@ from django.contrib.auth import authenticate, login
 from .models import UserAccount, Department
 from base.permission import IsAdminOrReadOnly, IsOwnerOrReadonly
 
-@api_view(["POST"])
+@api_view(["POST",])
 def logout_user(request): 
     if request.method == "POST":
         request.user.auth_token.delete()

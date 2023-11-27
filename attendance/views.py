@@ -25,7 +25,7 @@ def delete_attendance(request, pk):
 
 
 @api_view(['POST'])
-@permission_classes([permissions.IsAuthenticatedOrReadOnly])
+# @permission_classes([permissions.IsAuthenticatedOrReadOnly])
 def create_attendance(request):
 
     serializer = AttendanceSerializer(data=request.data)
