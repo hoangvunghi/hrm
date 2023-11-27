@@ -145,6 +145,8 @@ EMAIL_HOST_USER='hoangvunghi@gmail.com'
 EMAIL_HOST_PASSWORD='nghi'
 EMAIL_USER_TLS=True
 
+
+#gửi email xác thực bằng djoser
 DJOSER={
     'LOGIN_FIELD':'email',
     'USER_CREATE_PASSOWRD_RETYPE':True,
@@ -166,11 +168,12 @@ DJOSER={
 REST_FRAMEWORK = {
     # 'DEFAULT_SCHEMA_CLASS':'rest_framework.schemas.coreapi.AutoSchema' ,
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'rest_framework_simplejwt.authentication.JWTAuthentication', # xác thực người dùng 
     ),
 }
+
 SIMPLE_JWT = {
    'AUTH_HEADER_TYPES': ('JWT',),
-   "USER_ID_FIELD": "user_id",
+   "USER_ID_FIELD": "user_id", #thay trường id thành user_id ( nghĩa là tất cả các xác thực sẽ dùng user_id thay vì id)
 }
 
