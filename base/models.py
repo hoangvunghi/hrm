@@ -5,6 +5,8 @@ from datetime import datetime
 class Positions(models.Model):
     position_id = models.AutoField(primary_key=True)
     position_name = models.CharField(max_length=200)
+    
+
 
 class UserAccountManager(BaseUserManager):
     def create_user(self, email, name, password=None, **extra_fields):
@@ -16,11 +18,21 @@ class UserAccountManager(BaseUserManager):
         user.save()
         return user
 
+# #hàm mới
     def create_superuser(self, email, password=None, **extra_fields):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
         
-        return self.create_user(email, password, **extra_fields)
+        return self.create_user(email=email, name='admin', password=password, **extra_fields)
+# #hàm cũ
+    # def create_superuser(self, email, password=None, **extra_fields):
+    #     extra_fields.setdefault('is_staff', True)
+    #     extra_fields.setdefault('is_superuser', True)
+        
+    #     return self.create_user(email, password, **extra_fields)
+
+
+    
 
 class UserAccount(AbstractBaseUser, PermissionsMixin):
     user_id = models.AutoField(primary_key=True)
