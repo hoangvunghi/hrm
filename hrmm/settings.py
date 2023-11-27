@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'rest_framework_swagger',
     'attendance.apps.AttendanceConfig',
     'position.apps.PositionConfig',
+    "rest_framework.authtoken",
     
 ]
 
@@ -169,11 +170,18 @@ REST_FRAMEWORK = {
     # 'DEFAULT_SCHEMA_CLASS':'rest_framework.schemas.coreapi.AutoSchema' ,
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication', # xác thực người dùng 
-    ),
+        # "rest_framework.authentication.SessionAuthentication",
+        "rest_framework.authentication.TokenAuthentication",
+        'rest_framework.authentication.BasicAuthentication',
+   ),
+    # "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticatedOrReadOnly"),
+
 }
 
 SIMPLE_JWT = {
-   'AUTH_HEADER_TYPES': ('JWT',),
+#    'AUTH_HEADER_TYPES': ('JWT',),
    "USER_ID_FIELD": "user_id", #thay trường id thành user_id ( nghĩa là tất cả các xác thực sẽ dùng user_id thay vì id)
+
+    "AUTH_HEADER_TYPES": ("Bearer",),
 }
 
