@@ -1,7 +1,7 @@
 from rest_framework.decorators import api_view,permission_classes
 from rest_framework.response import Response
 from rest_framework import status
-from base.models import UserAccount,Attendance
+from base.models import Attendance
 from .serializers import AttendanceSerializer
 from base.permission import IsAdminOrReadOnly,IsOwnerOrReadonly
 from rest_framework import permissions
@@ -25,7 +25,7 @@ def delete_attendance(request, pk):
 
 
 @api_view(['POST'])
-# @permission_classes([permissions.IsAuthenticatedOrReadOnly])
+@permission_classes([permissions.IsAuthenticatedOrReadOnly])
 def create_attendance(request):
 
     serializer = AttendanceSerializer(data=request.data)

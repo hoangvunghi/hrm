@@ -64,6 +64,7 @@ def user_login_view(request):
                 data['email'] = user.email
 
                 refresh = RefreshToken.for_user(user)
+                print(refresh)
                 data['token'] = {
                     'refresh': str(refresh),
                     'access': str(refresh.access_token)
