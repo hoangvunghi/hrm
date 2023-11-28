@@ -1,6 +1,9 @@
 from django.urls import path
 from . import views
 
+from django.contrib import admin
+
+
 urlpatterns=[
     path("login/", views.user_login_view, name="login"),
     path("logout/", views.logout_user, name="logout"),
@@ -10,3 +13,5 @@ urlpatterns=[
     path('delete_employee/<str:pk>/', views.delete_employee, name='delete-employee'),
     
 ]
+
+

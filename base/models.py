@@ -5,7 +5,6 @@ from datetime import datetime
 class Positions(models.Model):
     position_id = models.AutoField(primary_key=True)
     position_name = models.CharField(max_length=200)
-    
 
 
 class UserAccountManager(BaseUserManager):

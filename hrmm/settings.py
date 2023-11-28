@@ -49,7 +49,7 @@ INSTALLED_APPS = [
     'attendance.apps.AttendanceConfig',
     'position.apps.PositionConfig',
     "rest_framework.authtoken",
-    
+    'corsheaders',
 ]
 
 MIDDLEWARE = [
@@ -60,6 +60,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    # 'path.to.CustomAdminMiddleware',
+    
 ]
 
 ROOT_URLCONF = 'hrmm.urls'
