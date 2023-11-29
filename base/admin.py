@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.admin import AdminSite
 from .models import Attendance,Positions,UserAccount,Department,Leave,Leave_Type
-
+from django.contrib.contenttypes.models import ContentType
 
 class HRAdminSite(AdminSite):
     """HR admin page definition"""
@@ -12,6 +12,7 @@ class HRAdminSite(AdminSite):
 
 hr_admin_site = HRAdminSite(name='hr_admin')
 
+admin.site.register(UserAccount)
 admin.site.register(Positions)
 admin.site.register(Attendance)
 admin.site.register(Leave)
@@ -31,23 +32,27 @@ class HRAttendanceAdmin(admin.ModelAdmin):
     pass
 
 
+from django.contrib import admin
+from django.contrib.auth.models import Group, Permission
 
 
-# from django.shortcuts import redirect
 
-# from django.urls import reverse,path
+hr_admin_group, created = Group.objects.get_or_create(name='HRAdminGroup')
 
-# class CustomAdminMiddleware:
-#     def __init__(self, get_response):
-#         self.get_response = get_response
+content_type = ContentType.objects.get_for_model(UserAccount)
+can_view_permission, created = Permission.objects.get_or_create(
+    codename='can_view_hr_admin',
+    name='Can view HR admin',
+    content_type=content_type,
+)
 
-#     def __call__(self, request):
-#         # Nếu là superuser, chuyển hướng đến trang admin
-#         if request.path.startswith(reverse('admin:index')) and request.user.is_superuser:
-#             return self.get_response(request)
-#         # Nếu là nhân viên (staff), chuyển hướng đến trang HR admin
-#         elif request.path.startswith(reverse('hr_admin:index')) and request.user.is_staff:
-#             return self.get_response(request)
-#         # Ngược lại, chuyển hướng về trang admin
-#         else:
-#             return redirect(reverse('admin:index'))
+can_change_permission, created = Permission.objects.get_or_create(
+    codename='can_change_useraccount',
+    name='Can change User Account',
+    content_type=content_type,
+)
+
+hr_admin_group.permissions.add(can_view_permission, can_change_permission)
+
+
+
