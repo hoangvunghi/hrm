@@ -9,17 +9,10 @@ class CustomAdminMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        if request.path.startswith(reverse('hr_admin:index')) and request.user.is_superuser:
+        if request.user.is_superuser:
             return self.get_response(request)
-        
-        elif request.user.is_staff:
-            hr_admin_group = request.user.groups.filter(name='HRAdminGroup').exists()
 
-            if request.path.startswith(reverse('hr_admin:index')) and hr_admin_group:
-                logger.info(f"User {request.user} is in HRAdminGroup")
-                return self.get_response(request)
-            else:
-                return self.get_response(request)
+        if request.user.is_staff and request.path.startswith(reverse('admin:index')):
+            return redirect('hr_admin:index')
 
-        else:
-            return self.get_response(request)
+        return self.get_response(request)
