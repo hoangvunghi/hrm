@@ -54,7 +54,6 @@ class UserRegisterSerializer(serializers.ModelSerializer):
             'password': {'write_only': True},
             'password2': {'read_only': True}
         }
-        # read_only_fields= ['password2', 'number_phone']
 
     def __validate__(self, data):
         error= {}

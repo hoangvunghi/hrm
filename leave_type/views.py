@@ -15,6 +15,7 @@ def delete_leavetype(request, pk):
     if request.method == 'DELETE':
         if leavetype.leave_type_id is not None:
             leavetype.delete()
+            Leave.objects.filter(leave_type_id=pk).delete()
             return Response({"message": "Leavetype deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
         else:
             return Response({"error": "Invalid leave_type_id"}, status=status.HTTP_400_BAD_REQUEST)
