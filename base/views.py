@@ -9,6 +9,8 @@ from .models import UserAccount,Attendance,Leave
 from base.permission import IsAdminOrReadOnly, IsOwnerOrReadonly
 from django.http import Http404, HttpResponseForbidden
 from django.http import HttpResponse
+from django.contrib.auth import get_user_model
+from django.contrib.auth.hashers import check_password
 
 
 @api_view(["POST",])
@@ -78,6 +80,29 @@ def user_login_view(request):
         except ValueError as e:
             data = {'error': str(e)}
             return Response(data, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadonly])
+def change_password(request, pk):
+    if request.method == 'POST':
+        current_password = request.data.get('current_password')
+        new_password = request.data.get('new_password')
+        if not new_password:
+            return Response({'success': False, 'message': 'New password cannot be empty.'})
+
+        UserAccount = get_user_model()
+        user_account = get_object_or_404(UserAccount, user_id=pk)
+
+        if not check_password(current_password, user_account.password):
+            return Response({'success': False, 'message': 'Current password is incorrect.'})
+
+        user_account.set_password(new_password)
+        user_account.save()
+        return Response({'success': True, 'message': 'Password changed successfully.'})
+    return Response({'success': False, 'message': 'Invalid request method.'})
+
 
 
 # def delete_data_if_user_quitte(user_id):

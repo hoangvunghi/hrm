@@ -42,3 +42,5 @@ tzdata==2023.3
 uritemplate==4.1.1
 urllib3==2.1.0
 whitenoise==6.6.0
+django-admin-interface==0.26.0
+django-import-export==3.2.0

@@ -9,9 +9,10 @@ https://docs.djangoproject.com/en/4.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
-
+import zoneinfo
 from pathlib import Path
-
+import os
+from datetime import timedelta
 
 # CORS_ORIGIN_ALLOW_ALL = True
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -33,6 +34,8 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    "admin_interface",
+    "colorfield",
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -50,8 +53,11 @@ INSTALLED_APPS = [
     'position.apps.PositionConfig',
     "rest_framework.authtoken",
     'corsheaders',
+    # "import_export",
+    
 ]
-
+X_FRAME_OPTIONS = "SAMEORIGIN"              # allows you to use modals insated of popups
+SILENCED_SYSTEM_CHECKS = ["security.W019"]  
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -122,7 +128,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Bangkok'
 
 USE_I18N = True
 
@@ -133,6 +139,8 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+STATICFILES_DIRS = [os.path.join(BASE_DIR, 'staticfiles'), ]
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
