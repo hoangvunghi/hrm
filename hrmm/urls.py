@@ -16,7 +16,6 @@ urlpatterns = [
     path('',include('leave_type.urls')),
     path('',include('attendance.urls')),
     path('',include('position.urls')),
-    
     path('hr_admin/', hr_admin_site.urls),  
 
     # path('', schema_view),
