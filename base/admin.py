@@ -24,7 +24,7 @@ class HRUserAdmin(UserAdmin):
 @admin.register(Positions, site=hr_admin_site)
 class HRPositionsAdmin(admin.ModelAdmin):
     pass
-
+  
 @admin.register(Attendance, site=hr_admin_site)
 class HRAttendanceAdmin(admin.ModelAdmin):
     pass

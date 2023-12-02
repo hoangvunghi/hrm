@@ -1,17 +1,14 @@
-from django.shortcuts import get_object_or_404
+from django.http import Http404, HttpResponse, HttpResponseForbidden
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework import status, permissions
 from .serializers import UserRegisterSerializer, UserAccountSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate, login
-from .models import UserAccount,Attendance,Leave
+from .models import UserAccount, Attendance, Leave
 from base.permission import IsAdminOrReadOnly, IsOwnerOrReadonly
-from django.http import Http404, HttpResponseForbidden
-from django.http import HttpResponse
 from django.contrib.auth import get_user_model
 from django.contrib.auth.hashers import check_password
-
 
 @api_view(["POST",])
 def logout_user(request): 
@@ -81,8 +78,6 @@ def user_login_view(request):
             data = {'error': str(e)}
             return Response(data, status=status.HTTP_400_BAD_REQUEST)
 
-
-
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadonly])
 def change_password(request, pk):
@@ -93,7 +88,10 @@ def change_password(request, pk):
             return Response({'success': False, 'message': 'New password cannot be empty.'})
 
         UserAccount = get_user_model()
-        user_account = get_object_or_404(UserAccount, user_id=pk)
+        try:
+            user_account = UserAccount.objects.get(user_id=pk)
+        except UserAccount.DoesNotExist:
+            return Response({'success': False, 'message': 'User not found.'})
 
         if not check_password(current_password, user_account.password):
             return Response({'success': False, 'message': 'Current password is incorrect.'})
@@ -103,30 +101,13 @@ def change_password(request, pk):
         return Response({'success': True, 'message': 'Password changed successfully.'})
     return Response({'success': False, 'message': 'Invalid request method.'})
 
-
-
-# def delete_data_if_user_quitte(user_id):
-#     # try:
-#         user = UserAccount.objects.get(user_id=user_id)
-
-#         if user.status == 'quitte':
-#             Attendance.objects.filter(employee_id=user).delete()
-#             Leave.objects.filter(employee=user).delete()
-        
-        # print(f"Deleted data for user {user.email} because the status is 'quitte'")
-        # else:
-            # return HttpResponse(f"No data deletion. User {user.email} has a status other than 'quitte'")
-    # except UserAccount.DoesNotExist:
-        # raise Http404(f"User with ID {user_id} does not exist.")
-    # except Exception as e:
-        # raise HttpResponseForbidden(f"Error: {str(e)}")
-
-
-
 @api_view(['DELETE'])
 @permission_classes([permissions.IsAuthenticatedOrReadOnly, IsAdminOrReadOnly])
 def delete_employee(request, pk):
-    employee = get_object_or_404(UserAccount, user_id=pk)
+    try:
+        employee = UserAccount.objects.get(user_id=pk)
+    except UserAccount.DoesNotExist:
+        return Response({"error": "Employee not found"}, status=status.HTTP_404_NOT_FOUND)
 
     if request.method == 'DELETE':
         employee.delete()
@@ -134,8 +115,6 @@ def delete_employee(request, pk):
         Attendance.objects.filter(employee_id=pk).delete()
         Leave.objects.filter(employee=pk).delete()
         return Response({"message": "Employee deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
-    
-
 
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticatedOrReadOnly, IsAdminOrReadOnly])
@@ -154,7 +133,10 @@ def create_employee(request):
 @api_view(['PATCH'])
 @permission_classes([permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadonly])
 def update_employee(request, pk):
-    employee = get_object_or_404(UserAccount, user_id=pk)
+    try:
+        employee = UserAccount.objects.get(user_id=pk)
+    except UserAccount.DoesNotExist:
+        return Response({"error": "Employee not found"}, status=status.HTTP_404_NOT_FOUND)
 
     if request.method == 'PATCH':
         serializer = UserAccountSerializer(employee, data=request.data)
@@ -166,11 +148,6 @@ def update_employee(request, pk):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
-    
-    
-
-
 
 def delete_data_if_user_quitte(user_id):
     try:
@@ -186,6 +163,4 @@ def delete_data_if_user_quitte(user_id):
         raise Http404(f"User with ID {user_id} does not exist.")
     except Exception as e:
         raise HttpResponseForbidden(f"Error: {str(e)}")
-
-
 

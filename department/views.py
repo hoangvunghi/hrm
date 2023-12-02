@@ -4,12 +4,15 @@ from rest_framework import status, permissions
 from base.models import UserAccount, Department
 from .serializers import DepartmentSerializer
 from base.permission import IsAdminOrReadOnly, IsOwnerOrReadonly
-from django.shortcuts import get_object_or_404
+from django.http import Http404
 
 @api_view(['DELETE'])
 @permission_classes([permissions.IsAuthenticatedOrReadOnly, IsAdminOrReadOnly])
 def delete_department(request, pk):
-    department = get_object_or_404(Department, department_id=pk)
+    try:
+        department = Department.objects.get(department_id=pk)
+    except Department.DoesNotExist:
+        return Response({"error": "Department not found"}, status=status.HTTP_404_NOT_FOUND)
 
     if request.method == 'DELETE':
         if department.department_id is not None:
@@ -45,7 +48,7 @@ def update_department(request, pk):
     try:
         department = Department.objects.get(department_id=pk)
     except Department.DoesNotExist:
-        return Response({"message": "Department not found"}, status=status.HTTP_404_NOT_FOUND)
+        return Response({"error": "Department not found"}, status=status.HTTP_404_NOT_FOUND)
 
     if request.method == 'PATCH':
         serializer = DepartmentSerializer(department, data=request.data)

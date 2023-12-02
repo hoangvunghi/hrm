@@ -1,16 +1,18 @@
-from rest_framework.decorators import api_view,permission_classes
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
-from rest_framework import status
-from base.models import UserAccount,Leave,Leave_Type
+from rest_framework import status, permissions
+from base.models import UserAccount, Leave, Leave_Type
 from .serializers import LeaveTypeSerializer
-from rest_framework import permissions
-from base.permission import IsAdminOrReadOnly,IsOwnerOrReadonly
-from django.shortcuts import get_object_or_404
+from base.permission import IsAdminOrReadOnly, IsOwnerOrReadonly
+from django.http import Http404
 
 @api_view(['DELETE'])
 @permission_classes([permissions.IsAuthenticatedOrReadOnly, IsAdminOrReadOnly])
 def delete_leavetype(request, pk):
-    leavetype = get_object_or_404(Leave_Type, leave_type_id=pk)
+    try:
+        leavetype = Leave_Type.objects.get(leave_type_id=pk)
+    except Leave_Type.DoesNotExist:
+        return Response({"error": "Leavetype not found"}, status=status.HTTP_404_NOT_FOUND)
 
     if request.method == 'DELETE':
         if leavetype.leave_type_id is not None:
@@ -37,7 +39,10 @@ def create_leavetype(request):
 @api_view(['PATCH'])
 @permission_classes([permissions.IsAuthenticatedOrReadOnly, IsAdminOrReadOnly])
 def update_leavetype(request, pk):
-    leavetype = get_object_or_404(Leave_Type, leave_type_id=pk)
+    try:
+        leavetype = Leave_Type.objects.get(leave_type_id=pk)
+    except Leave_Type.DoesNotExist:
+        return Response({"error": "Leavetype not found"}, status=status.HTTP_404_NOT_FOUND)
 
     if request.method == 'PATCH':
         serializer = LeaveTypeSerializer(leavetype, data=request.data)

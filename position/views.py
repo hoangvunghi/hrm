@@ -1,16 +1,18 @@
-from rest_framework.decorators import api_view,permission_classes
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
-from rest_framework import status
-from base.models import UserAccount,Positions
+from rest_framework import status, permissions
+from base.models import UserAccount, Positions
 from .serializers import PositionsSerializer
-from rest_framework import permissions
-from base.permission import IsAdminOrReadOnly,IsOwnerOrReadonly
-from django.shortcuts import get_object_or_404
+from base.permission import IsAdminOrReadOnly, IsOwnerOrReadonly
+from django.http import Http404
 
 @api_view(['DELETE'])
 @permission_classes([permissions.IsAuthenticatedOrReadOnly, IsAdminOrReadOnly])
 def delete_position(request, pk):
-    position = get_object_or_404(Positions, position_id=pk)
+    try:
+        position = Positions.objects.get(position_id=pk)
+    except Positions.DoesNotExist:
+        return Response({"error": "Position not found"}, status=status.HTTP_404_NOT_FOUND)
 
     if request.method == 'DELETE':
         if position.position_id is not None:
@@ -36,7 +38,10 @@ def create_position(request):
 @api_view(['PATCH'])
 @permission_classes([permissions.IsAuthenticatedOrReadOnly, IsAdminOrReadOnly])
 def update_position(request, pk):
-    position = get_object_or_404(Positions, position_id=pk)
+    try:
+        position = Positions.objects.get(position_id=pk)
+    except Positions.DoesNotExist:
+        return Response({"error": "Position not found"}, status=status.HTTP_404_NOT_FOUND)
 
     if request.method == 'PATCH':
         serializer = PositionsSerializer(position, data=request.data)
