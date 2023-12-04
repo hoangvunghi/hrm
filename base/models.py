@@ -74,7 +74,7 @@ class Attendance(models.Model):
     employee_id = models.ForeignKey(UserAccount, on_delete=models.CASCADE)
     attendance_date = models.DateField(auto_now=True)
     check_in_time = models.DateTimeField(auto_now=True)
-    check_out_time = models.DateTimeField()
+    check_out_time = models.DateTimeField(auto_now_add=True)
     
     STATUS_CHOICES = [
         ('ontime', 'OnTime'),

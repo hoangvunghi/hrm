@@ -51,7 +51,7 @@ admin.site.register(Leave,LeaveAdmin)
 
 
 class AttendanceAdmin(admin.ModelAdmin):
-    list_display=["employee_id",]
+    list_display=["employee_id","check_in_time","check_out_time","attendance_date"]
 admin.site.register(Attendance,AttendanceAdmin)
 
 
