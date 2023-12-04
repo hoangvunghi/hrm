@@ -48,8 +48,10 @@ class UserRegisterSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         # fields = '__all__'
-        fields = ['name', 'username', 'email', 'password', 'password2','phone_number', 'date_of_birth', 'date_of_hire', 'first_name', 'last_name', 
-                  'address', 'status']
+        fields = ['name', 'username', 'email', 'password', 'password2'
+                #   ,'phone_number', 'date_of_birth', 'date_of_hire', 'first_name', 'last_name', 
+                #   'address', 'status'
+                  ]
         extra_kwargs = {
             'password': {'write_only': True},
             'password2': {'read_only': True}
