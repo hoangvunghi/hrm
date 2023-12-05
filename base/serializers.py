@@ -41,6 +41,34 @@ class UserAccountSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserAccount
         fields = '__all__'
+        extra_kwargs = {
+        'password': {'write_only': True},
+        }
+        
+    # def __init__(self, *args, **kwargs):
+    #     super().__init__(*args, **kwargs)
+
+    def create(self, validated_data):
+        password = validated_data.get('password')
+        user = UserAccount.objects.create(**validated_data)
+        user.set_password(password)
+        user.save()
+        return user
+    
+    def update(self, instance, validated_data):
+        validated_data.update(self.initial_data)
+        return super().update(instance=instance, validated_data=validated_data)
+    
+    # def validate(self, data):
+    #     print("ffff",data)
+    #     request = self.context.get('request')
+    #     print(request)
+    #     current_user_id = request.UserAccount.id if request and request.UserAccount else None
+    #     print(current_user_id)
+    #     if UserAccount.objects.filter(username=data['username']).exclude(id=current_user_id).exists():
+    #          raise serializers.ValidationError("User already exists")
+        
+    #     return data
 
 
 class UserRegisterSerializer(serializers.ModelSerializer):

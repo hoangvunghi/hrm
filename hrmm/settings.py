@@ -191,7 +191,6 @@ REST_FRAMEWORK = {
 SIMPLE_JWT = {
 #    'AUTH_HEADER_TYPES': ('JWT',),
    "USER_ID_FIELD": "user_id", #thay trường id thành user_id ( nghĩa là tất cả các xác thực sẽ dùng user_id thay vì id)
-
     "AUTH_HEADER_TYPES": ("Bearer",),
 }
-
+'AUTH_TOKEN_VALIDITY', timedelta(days=1)
