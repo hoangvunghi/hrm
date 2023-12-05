@@ -11,6 +11,20 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.hashers import check_password
 import re
 from django.db.models import Q
+# from django.shortcuts import redirect
+
+
+# def check_user(request):
+#     if request.user.is_superuser:
+#         return redirect('admin:index')  
+
+#     if request.user.is_staff and not request.user.is_superuser:
+#         return redirect('hr_admin:index')
+
+#     return redirect('user')
+
+        
+
 
 @api_view(["POST",])
 def find_employee(request):
@@ -28,11 +42,11 @@ def find_employee(request):
 
 
 
-@api_view(["POST",])
-def logout_user(request): 
-    if request.method == "POST":
-        request.user.auth_token.delete()
-        return Response({"Message": "You are logged out"}, status=status.HTTP_200_OK)
+# @api_view(["POST",])
+# def logout_user(request): 
+#     if request.method == "POST":
+#         request.user.auth_token.delete()
+#         return Response({"Message": "You are logged out"}, status=status.HTTP_200_OK)
 
 @api_view(["POST"])
 def user_register_view(request):
@@ -75,9 +89,9 @@ def user_login_view(request):
             password = request.data.get('password', '')
 
             if not username:
-                raise ValueError('Username is required')
+                raise Response('Username is required')
             if not password:
-                raise ValueError('Password is required')
+                raise Response('Password is required')
 
             data = {}
             try:
@@ -102,9 +116,10 @@ def user_login_view(request):
             else:
                 data['error'] = 'Invalid username or password'
                 return Response(data, status=status.HTTP_401_UNAUTHORIZED)
-
+            print("Là admin",user.is_superuser)
+            print("là staff",user.is_staff)
             return Response(data)
-        except ValueError as e:
+        except data["error"] as e:
             data = {'error': str(e)}
             return Response(data, status=status.HTTP_400_BAD_REQUEST)
 
@@ -152,6 +167,7 @@ def is_valid(data):
     username = data.get('username', '').lower()
     password = data.get('password', '')
     email=data.get("email","").lower()
+    phone_number=data.get("phone_number")
     if not username:
         errors['username']= 'Username is required'
     if not password:
@@ -161,6 +177,11 @@ def is_valid(data):
     email_regex = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
     if not re.match(email_regex, email):
         errors['email']= "Invalid email format."
+    if not phone_number:
+        errors['phone_number']= "Phone number is required"
+    phone_regex = r'^[0-9]$'
+    if not re.match(phone_regex, phone_number) or len(phone_number)!=10:
+        errors['email']= "Phone number email format."
     return errors
 
 @api_view(['POST'])
@@ -185,8 +206,7 @@ def create_employee(request):
 
 
 def validate_account_to_update(obj, data):
-    # obj da ton tai
-    errors= {} #is_valid(data)
+    errors= {} 
     for key in data:
         value= data[key]
         if key in ['username', 'user_id']:
@@ -240,7 +260,11 @@ def delete_data_if_user_quitte(user_id):
         else:
             return HttpResponse(f"No data deletion. User {user.email} has a status other than 'quitte'")
     except UserAccount.DoesNotExist:
-        raise Http404(f"User with ID {user_id} does not exist.")
+        return Response(f"User with ID {user_id} does not exist.")
     except Exception as e:
-        raise HttpResponseForbidden(f"Error: {str(e)}")
+        return Response(f"Error: {str(e)}")
+    
+    
+    
+
 
