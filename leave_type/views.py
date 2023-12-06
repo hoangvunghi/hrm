@@ -42,15 +42,19 @@ def update_leavetype(request, pk):
     try:
         leavetype = Leave_Type.objects.get(leave_type_id=pk)
     except Leave_Type.DoesNotExist:
-        return Response({"error": "Leavetype not found"}, status=status.HTTP_404_NOT_FOUND)
+        return Response({"error": "Leavetype not found","status":status.HTTP_404_NOT_FOUND}
+                        , status=status.HTTP_404_NOT_FOUND)
 
     if request.method == 'PATCH':
         serializer = LeaveTypeSerializer(leavetype, data=request.data)
         if serializer.is_valid():
             leave_type_id = request.data.get('leave_type_id', None)
             if leave_type_id is not None and not Leave.objects.filter(leave_type_id=leave_type_id).exists():
-                return Response({"error": "Leavetype not found"}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({"error": "Leavetype not found","status":status.HTTP_400_BAD_REQUEST},
+                                status=status.HTTP_400_BAD_REQUEST)
             
             serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(serializer.data,{"status":status.HTTP_200_OK},
+                            status=status.HTTP_200_OK)
+        return Response(serializer.errors,{"status":status.HTTP_400_BAD_REQUEST} ,
+                        status=status.HTTP_400_BAD_REQUEST)
