@@ -11,6 +11,8 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.hashers import check_password
 import re
 from django.db.models import Q
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
 # from django.shortcuts import redirect
 
 
@@ -40,8 +42,10 @@ def find_employee(request):
     usernames = employees.values_list('username', flat=True)
     return Response({'usernames': list(usernames)})
 
+@api_view(["GET",])
 
-
+def a(request):
+    return Response("hello")
 # @api_view(["POST",])
 # def logout_user(request): 
 #     if request.method == "POST":
@@ -88,40 +92,41 @@ def user_login_view(request):
             username = request.data.get('username', '').lower()
             password = request.data.get('password', '')
 
-            if not username:
-                raise Response('Username is required')
-            if not password:
-                raise Response('Password is required')
-
-            data = {}
-            try:
-                user = UserAccount.objects.get(username=username)
-            except UserAccount.DoesNotExist:
-                data['error'] = 'User does not exist'
-                return Response(data, status=status.HTTP_400_BAD_REQUEST)
+            if not username or not password:
+                return Response({'error': 'Username and password are required'}, status=status.HTTP_400_BAD_REQUEST)
 
             user = authenticate(request, username=username, password=password)
 
             if user is not None:
-                login(request, user)
-                data['response'] = 'Login successful'
-                data['username'] = user.username
-                data['email'] = user.email
+                try:
+                    refresh = RefreshToken.for_user(user)
+                    access_token = str(refresh.access_token)
+                except TokenError as e:
+                    if isinstance(e, InvalidToken) and e.args[0] == 'Token has expired':
+                        return Response({'error': 'Access token has expired. Please refresh the token.'}, status=status.HTTP_401_UNAUTHORIZED)
+                    else:
+                        return Response({'error': 'Invalid token.'}, status=status.HTTP_401_UNAUTHORIZED)
 
-                refresh = RefreshToken.for_user(user)
-                data['token'] = {
-                    'refresh': str(refresh),
-                    'access': str(refresh.access_token)
+
+                data = {
+                    'response': 'Login successful',
+                    'username': user.username,
+                    'email': user.email,
+                    'token': {
+                        'refresh': str(refresh),
+                        'access': access_token
+                    }
                 }
+
+                print("Is admin:", user.is_superuser)
+                print("Is staff:", user.is_staff)
+
+                return Response(data)
             else:
-                data['error'] = 'Invalid username or password'
-                return Response(data, status=status.HTTP_401_UNAUTHORIZED)
-            print("Là admin",user.is_superuser)
-            print("là staff",user.is_staff)
-            return Response(data)
-        except data["error"] as e:
-            data = {'error': str(e)}
-            return Response(data, status=status.HTTP_400_BAD_REQUEST)
+                return Response({'error': 'Invalid username or password'}, status=status.HTTP_401_UNAUTHORIZED)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
 
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadonly])

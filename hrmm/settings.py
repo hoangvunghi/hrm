@@ -9,7 +9,7 @@ https://docs.djangoproject.com/en/4.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
-import zoneinfo
+# import zoneinfo
 from pathlib import Path
 import os
 from datetime import timedelta
@@ -28,7 +28,12 @@ SECRET_KEY = 'django-insecure-jdpf2v1-4x!m&v)f!x%2z0u22)^si=i4h7t21vivl^^2%3#w0%
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    '192.168.1.18',
+    '127.0.0.1',
+    '192.168.1.17',
+
+]
 
 
 # Application definition
@@ -54,6 +59,7 @@ INSTALLED_APPS = [
     "rest_framework.authtoken",
     'corsheaders',
     # "import_export",
+    'drf_spectacular'
     
 ]
 X_FRAME_OPTIONS = "SAMEORIGIN"              # allows you to use modals insated of popups
@@ -61,12 +67,17 @@ SILENCED_SYSTEM_CHECKS = ["security.W019"]
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    # 'coreheaders.middleware.CorsMiddleware'
+    'corsheaders.middleware.CorsMiddleware',
+
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'base.middleware.CustomAdminMiddleware',
+    
+
 ]
 
 ROOT_URLCONF = 'hrmm.urls'
@@ -88,6 +99,9 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'hrmm.wsgi.application'
+CORS_ALLOWED_ORIGINS=[
+    "http://localhost:5173",
+]
 
 
 # Database
@@ -95,14 +109,9 @@ WSGI_APPLICATION = 'hrmm.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'hrm_sql',
-        'USER': 'root',
-        'PASSWORD': '123456',
-        'HOST':'127.0.0.1',
-        'PORT':'3306',
-        }
-}
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+}}
 
 
 # Password validation
@@ -185,12 +194,18 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.BasicAuthentication',
    ),
     # "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticatedOrReadOnly"),
+        'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 
 }
 
+SPECTACULAR_SETTING={
+    "TITLE":"Django DRF Ecommerce",
+    
+}
 SIMPLE_JWT = {
 #    'AUTH_HEADER_TYPES': ('JWT',),
    "USER_ID_FIELD": "user_id", #thay trường id thành user_id ( nghĩa là tất cả các xác thực sẽ dùng user_id thay vì id)
     "AUTH_HEADER_TYPES": ("Bearer",),
-    "ACCESS_TOKEN_LIFETIME": timedelta(days=1),
+    "ACCESS_TOKEN_LIFETIME": timedelta(days=2),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=30)
 }
