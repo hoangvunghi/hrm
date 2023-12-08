@@ -3,6 +3,7 @@ from django.contrib.auth.admin import UserAdmin
 from django.contrib.admin import AdminSite
 from .models import Attendance,Positions,UserAccount,Department,Leave,Leave_Type
 # from django.contrib.auth.models import User
+from organization.models import Organization
 
 # from import_export.admin import ImportExportActionModelAdmin
 # from .admin import DjangoQLSearchMixin
@@ -16,6 +17,7 @@ hr_admin_site = HRAdminSite(name='hr_admin')
 
 
 admin.site.register(Leave_Type)
+admin.site.register(Organization)
 
 @admin.register(UserAccount, site=hr_admin_site)
 class HRUserAdmin(UserAdmin):

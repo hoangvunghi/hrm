@@ -22,8 +22,9 @@ urlpatterns = [
     path('position/',include('position.urls')),
     path('hr_admin/', hr_admin_site.urls),  
     # url("api/", schema_view)
-    path("api/schema",SpectacularAPIView.as_view(),name="schema"),
-    path("docs",SpectacularSwaggerView.as_view(url_name="schema")),
+    path("organization/",include('organization.urls')),
+    path("api/schema/",SpectacularAPIView.as_view(),name="schema"),
+    path("docs/",SpectacularSwaggerView.as_view(url_name="schema")),
     # path('', schema_view),
 ]
 

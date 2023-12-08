@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'department.apps.DepartmentConfig',
     'leave.apps.LeaveConfig',
     'leave_type.apps.LeaveTypeConfig',
+    'organization.apps.OrganizationConfig',
     'rest_framework',
     'djoser',
     'rest_framework_swagger',
@@ -59,10 +60,10 @@ INSTALLED_APPS = [
     "rest_framework.authtoken",
     'corsheaders',
     # "import_export",
-    'drf_spectacular'
+    'drf_spectacular',
     
 ]
-X_FRAME_OPTIONS = "SAMEORIGIN"              # allows you to use modals insated of popups
+X_FRAME_OPTIONS = "SAMEORIGIN"              
 SILENCED_SYSTEM_CHECKS = ["security.W019"]  
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -193,8 +194,12 @@ REST_FRAMEWORK = {
         "rest_framework.authentication.TokenAuthentication",
         'rest_framework.authentication.BasicAuthentication',
    ),
-    # "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticatedOrReadOnly"),
-        'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    # 'DEFAULT_PERMISSION_CLASSES': [
+    #     'base.permissions.IsAdminOrReadOnly',
+    #     'base.permissions.IsOwnerOrReadonly',
+    # ],
+
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 
 }
 
@@ -207,5 +212,5 @@ SIMPLE_JWT = {
    "USER_ID_FIELD": "user_id", #thay trường id thành user_id ( nghĩa là tất cả các xác thực sẽ dùng user_id thay vì id)
     "AUTH_HEADER_TYPES": ("Bearer",),
     "ACCESS_TOKEN_LIFETIME": timedelta(days=2),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=30)
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=30),
 }

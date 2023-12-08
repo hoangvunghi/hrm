@@ -6,7 +6,7 @@ from .serializers import UserRegisterSerializer, UserAccountSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate, login
 from .models import UserAccount, Attendance, Leave
-from base.permission import IsAdminOrReadOnly, IsOwnerOrReadonly
+from base.permissions import IsAdminOrReadOnly, IsOwnerOrReadonly
 from django.contrib.auth import get_user_model
 from django.contrib.auth.hashers import check_password
 import re,json
@@ -14,7 +14,7 @@ from django.db.models import Q
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
 from django.core.paginator import Paginator,EmptyPage
-from django.core.serializers import serialize
+from drf_spectacular.utils import extend_schema
 # from django.shortcuts import redirect
 
 # def check_user(request):
@@ -28,7 +28,6 @@ from django.core.serializers import serialize
 
 
 
-
 @api_view(["POST",])
 def find_employee(request):
     q=request.GET.get('q') if request.GET.get('q')!=None else ''
@@ -36,7 +35,8 @@ def find_employee(request):
         Q(username__icontains=q) |
         Q(name__icontains=q)|
         Q(first_name__icontains=q)|
-        Q(last_name__icontains=q)
+        Q(last_name__icontains=q)|
+        Q(position__position_name__icontains=q)
     ) 
     # serializer = UserAccountSerializer(employee, many=True)
     # return Response(serializer.data)
@@ -45,15 +45,11 @@ def find_employee(request):
                      "status":status.HTTP_200_OK},
                     status=status.HTTP_200_OK)
 
-@api_view(["GET",])
 
+@api_view(["GET",])
 def a(request):
     return Response("hello")
-# @api_view(["POST",])
-# def logout_user(request): 
-#     if request.method == "POST":
-#         request.user.auth_token.delete()
-#         return Response({"Message": "You are logged out"}, status=status.HTTP_200_OK)
+
 
 # @api_view(["POST"])
 # def user_register_view(request):
@@ -121,14 +117,16 @@ def user_login_view(request):
                     'email': user.email,
                     'token': {
                         'refresh': str(refresh),
-                        'access': access_token
-                    }
+                        'access': access_token,
+                    },
+                    "status":status.HTTP_200_OK,
+
                 }
 
                 print("Is admin:", user.is_superuser)
                 print("Is staff:", user.is_staff)
 
-                return Response(data)
+                return Response(data,status=status.HTTP_200_OK)
             else:
                 return Response({'error': 'Invalid username or password',
                                  "status":status.HTTP_401_UNAUTHORIZED}, 
@@ -191,37 +189,53 @@ def delete_employee(request, pk):
                         status=status.HTTP_204_NO_CONTENT)
 
 
-def is_valid(data):
-    errors= {}
-    username = data.get('username', '').lower()
-    password = data.get('password', '')
-    email=data.get("email","").lower()
-    phone_number=data.get("phone_number")
-    if not username:
-        errors['username']= 'Username is required'
-    if not password:
-        errors['password']= 'Password is required'
-    if not email:
-        errors['email']= "Email is required"
-    email_regex = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
-    if not re.match(email_regex, email):
-        errors['email']= "Invalid email format."
-    if not phone_number:
-        errors['phone_number']= "Phone number is required"
-    phone_regex = r'^[0-9]$'
-    if not re.match(phone_regex, phone_number) or len(phone_number)!=10:
-        errors['email']= "Phone number email format."
-    return errors
+def is_valid_type(request):
+    errors = {}
+    required_fields = ['username', 'password', 'email', 'phone_number', 
+                       'last_name', 'first_name',"position_id","date_of_birth",
+                       "attendance_id","check_in_time","check_out_time","status",
+                       "department_name","manager","leave_type","employee","start_date",
+                       "end_date","reason","position_name","organization_name","tax_id","number_of_employees",
+                       "registration_employees","cost_center","phone","tax","email","address_stress",
+                       "city","zip_postalcode","country","note"
+                       ]
+    for field in required_fields:
+        if field in request.data and not request.data[field]:
+            errors[field] = f'{field.capitalize()} is required'
+    if 'username' in request.data and not request.data['username']:
+        errors['username'] = 'Username is required'
+    if 'password'  in request.data and not request.data['password']:
+        errors['password'] = 'Password is required'
+    if 'email'  in request.data and not request.data['email']:
+        errors['email'] = 'Email is required'
+    else:
+        new_email = request.data['email'].lower()
+        email_regex = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
+        if not re.match(email_regex, new_email):
+            return Response({"error": "Invalid email format","status":status.HTTP_400_BAD_REQUEST}, 
+                            status=status.HTTP_400_BAD_REQUEST)
+    if 'phone_number'  in request.data and not request.data['phone_number']:
+        errors['phone_number'] = 'Phone number is required'
+    else:
+        phone_number = request.data['phone_number']
+        phone_regex = r'^[0-9]+$'
+        if not re.match(phone_regex, phone_number) or len(phone_number) != 10:
+            errors['phone_number'] = 'Invalid phone number format.'
+
+    if errors:
+        return Response(errors,{"status":status.HTTP_400_BAD_REQUEST} 
+                        ,status=status.HTTP_400_BAD_REQUEST)
+    return Response({"message": "Data is valid","status":status.HTTP_200_OK}
+                    , status=status.HTTP_200_OK)
+
+
 
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticatedOrReadOnly, IsAdminOrReadOnly])
 def create_employee(request):
-    errors= is_valid(request.data)
-    if len(errors):
-        return Response({"error": errors}, status=status.HTTP_400_BAD_REQUEST)
-        
     serializer = UserAccountSerializer(data=request.data)
-    
+    is_valid_type(serializer.data)
+
     if serializer.is_valid():
         user_id = request.data.get('user_id', None)
 
@@ -229,24 +243,27 @@ def create_employee(request):
             return Response({"error": "User with this user_id already exists",
                              "status":status.HTTP_400_BAD_REQUEST}, 
                             status=status.HTTP_400_BAD_REQUEST)
-
         serializer.save()
         return Response({"message": "User created successfully",
                          "status":status.HTTP_201_CREATED}, 
                         status=status.HTTP_201_CREATED)
-    return Response(serializer.errors,{"status":status.HTTP_400_BAD_REQUEST}, status=status.HTTP_400_BAD_REQUEST)
+    return Response(serializer.errors,{"status":status.HTTP_400_BAD_REQUEST},
+                    status=status.HTTP_400_BAD_REQUEST)
 
 
 
-def validate_account_to_update(obj, data):
-    errors= {} 
-    for key in data:
-        value= data[key]
+def validate_account_to_update(obj, request):
+    errors= is_valid_type(request.data)
+    if len(errors):
+        return Response({"error": errors,"status":status.HTTP_400_BAD_REQUEST},
+                        status=status.HTTP_400_BAD_REQUEST)
+    for key in request.data:
+        value= request.data[key]
         if key in ['username', 'user_id']:
-            errors[key]= f"{key} khong duoc phep thay doi"
+            errors[key]= f"{key} not allowed to change"
         if key=='email' and UserAccount.objects.filter(email= value).exclude(user_id= obj.user_id).exists():
-             errors[key]= f"email ({value}) da ton tai"         
-    return Response(errors,{"status":status.HTTP_400_BAD_REQUEST},
+             errors[key]= f"The email address ({value}) already exists."         
+    return Response({"error":errors,"status":status.HTTP_400_BAD_REQUEST},
                     status=status.HTTP_400_BAD_REQUEST) 
 
 def account_update(obj, validated_data):
@@ -259,18 +276,19 @@ def account_update(obj, validated_data):
 @api_view(['PATCH'])
 @permission_classes([permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadonly])
 def update_employee(request, pk):
-    print(request.data)
     try:
         employee = UserAccount.objects.get(user_id=pk)
     except UserAccount.DoesNotExist:
-        return Response({"error": "Employee not found"}, status=status.HTTP_404_NOT_FOUND)
+        return Response({"error": "Employee not found","status":status.HTTP_404_NOT_FOUND},
+                        status=status.HTTP_404_NOT_FOUND)
     if request.method == 'PATCH':
-        errors= validate_account_to_update(employee, request.data)
-        if len(errors):
-            return Response({"error": errors}, status=status.HTTP_400_BAD_REQUEST)
+   
+        validate_account_to_update(employee, request.data)
+        # if len(errors):
+        #     return Response({"error": errors}, status=status.HTTP_400_BAD_REQUEST)
         account_update(employee, request.data)
         serializer=UserAccountSerializer(employee)
-        return Response({"messeger": "Cap nhat thanh cong", "data":str(serializer.data),
+        return Response({"messeger": "update successfully", "data":str(serializer.data),
                          "status": status.HTTP_200_OK}, status=status.HTTP_200_OK)
         
         # serializer = UserAccountSerializer(employee, data=request.data, partial=True)
@@ -284,33 +302,27 @@ def update_employee(request, pk):
     
 
 
-
+# @extend_schema(responses=UserAccountSerializer)
 @api_view(["GET"])
-@permission_classes(IsAdminOrReadOnly)
+@permission_classes([IsAdminOrReadOnly])
 def list_employee(request):
     page_number = request.GET.get('page', 1)
     items_per_page = 20
-
     total_employees = UserAccount.objects.count()
-
     all_employees = UserAccount.objects.all()
-
     paginator = Paginator(all_employees, items_per_page)
-
     try:
         current_page_data = paginator.page(page_number)
     except EmptyPage:
         return Response({"error": "Page not found",
                          "status":status.HTTP_404_NOT_FOUND},
                         status=status.HTTP_404_NOT_FOUND)
-
     serializer = UserAccountSerializer(current_page_data.object_list, many=True)
     serialized_data = serializer.data
-
     return Response({
         "total_employees": total_employees,
         "current_page": page_number,
-        "employees": serialized_data,
+        "data": serialized_data,
         "status":status.HTTP_200_OK
     },status=status.HTTP_200_OK)
 
