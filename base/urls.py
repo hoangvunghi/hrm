@@ -14,7 +14,7 @@ urlpatterns=[
     path('change_password/<str:pk>', views.change_password, name='change-password'),
     path('find_employee/', views.find_employee, name='find_employee'),
     path("",views.a),
-    path("list_employee/<str:pg>",views.list_employee,name="list-employee"),
+    path("list_employee/<str:pg>/",views.list_employee,name="list-employee"), 
 ]
 
 
