@@ -55,15 +55,17 @@ def delete_attendance(request, pk):
 @permission_classes([permissions.IsAuthenticatedOrReadOnly])
 def create_attendance(request):
     serializer = AttendanceSerializer(data=request.data)
-    is_valid_type(serializer.data)
+    is_valid_type(request)
+    # if len(a)>0:
+    #     return "1"
     if serializer.is_valid():
         attendance_id = request.data.get('attendance_id', None)
         if Attendance.objects.filter(attendance_id=attendance_id).exists():
             return Response({"error": "Attendance with this attendance_id already exists",
-                             "status":status.HTTP_400_BAD_REQUEST}, status=status.HTTP_400_BAD_REQUEST)
+                             },{"status":status.HTTP_400_BAD_REQUEST}, status=status.HTTP_400_BAD_REQUEST)
 
         serializer.save()
         return Response({"message": "Attendance created successfully",
                          "status":status.HTTP_201_CREATED}, status=status.HTTP_201_CREATED)
-    return Response(serializer.errors,{"status":status.HTTP_400_BAD_REQUEST},
+    return Response(serializer.errors,
                     status=status.HTTP_400_BAD_REQUEST)

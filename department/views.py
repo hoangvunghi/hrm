@@ -57,7 +57,7 @@ def delete_department(request, pk):
 @permission_classes([permissions.IsAuthenticatedOrReadOnly, IsAdminOrReadOnly])
 def create_department(request):
     serializer = DepartmentSerializer(data=request.data)
-    is_valid_type(serializer.data)
+    # is_valid_type(serializer.data)
     if serializer.is_valid():
         department_id = request.data.get('department_id', None)
         department_name = request.data.get('department_name', None)
@@ -72,8 +72,7 @@ def create_department(request):
         serializer.save()
         return Response({"message": "Department created successfully",
                          "status":status.HTTP_201_CREATED}, status=status.HTTP_201_CREATED)
-    return Response(serializer.errors,{"status":status.HTTP_400_BAD_REQUEST}, 
-                    status=status.HTTP_400_BAD_REQUEST)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(['PATCH'])
@@ -87,7 +86,7 @@ def update_department(request, pk):
 
     if request.method == 'PATCH':
         serializer = DepartmentSerializer(department, data=request.data)
-        is_valid_type(serializer.data)
+        # is_valid_type(serializer.data)
         if serializer.is_valid():
             user_id = request.data.get('user_id', None)
             if user_id is not None and not UserAccount.objects.filter(user_id=user_id).exists():
@@ -96,5 +95,5 @@ def update_department(request, pk):
             serializer.save()
             return Response(serializer.data, {'status':status.HTTP_200_OK},
                             status=status.HTTP_200_OK)
-        return Response(serializer.errors,{"status":status.HTTP_400_BAD_REQUEST}, 
+        return Response(serializer.errors,
                         status=status.HTTP_400_BAD_REQUEST)
