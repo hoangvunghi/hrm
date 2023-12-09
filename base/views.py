@@ -342,7 +342,7 @@ def update_employee(request, pk):
             return Response({"message":"Password is required"}, status=status.HTTP_400_BAD_REQUEST)
         if 'email' in request.data and not request.data['email']:
             return Response({"message":"Email is required"}, status=status.HTTP_400_BAD_REQUEST)
-        if 'email' in request.data and  request.data['email']:
+        else:
             new_email = request.data['email']
             email_regex = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
             if not re.match(email_regex, new_email):
@@ -350,8 +350,7 @@ def update_employee(request, pk):
                                 status=status.HTTP_400_BAD_REQUEST)
         if 'phone_number' in request.data and not request.data['phone_number']:
             return Response({"message":"Phone number is required"}, status=status.HTTP_400_BAD_REQUEST)
-        if 'phone_number' in request.data and request.data['phone_number']:
-
+        else:
             phone_number = request.data['phone_number']
             phone_regex = r'^[0-9]+$'
             if not re.match(phone_regex, phone_number) or len(phone_number) != 10:
