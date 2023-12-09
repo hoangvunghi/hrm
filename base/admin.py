@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.admin import AdminSite
-from .models import Attendance,Positions,UserAccount,Department,Leave,Leave_Type
+from .models import Attendance,Positions,UserAccount,Department,Leave,Leave_Type, Project, Task
 # from django.contrib.auth.models import User
 from organization.models import Organization
 
@@ -56,6 +56,7 @@ class AttendanceAdmin(admin.ModelAdmin):
     list_display=["employee_id","check_in_time","check_out_time","attendance_date"]
 admin.site.register(Attendance,AttendanceAdmin)
 
-
+admin.site.register(Project)
+admin.site.register(Task)
 
 

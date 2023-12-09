@@ -65,7 +65,8 @@ def create_department(request):
         existing_department = Department.objects.filter(department_id=department_id, department_name=department_name).first()
         if existing_department:
             if existing_department.user_set.filter(user_id=user_id).exists():
-                return Response({"error":"User with this user_id already exists for department_id  and department_name ",
+                return Response({"error": f"""User with this user_id already exists for department_id {department_id} and 
+                                 department_name {department_name}""",
                                  "status":status.HTTP_400_BAD_REQUEST},
                                 status=status.HTTP_400_BAD_REQUEST)
 
@@ -75,7 +76,7 @@ def create_department(request):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-@api_view(['PATCH'])
+@api_view(['PATCH']) 
 @permission_classes([permissions.IsAuthenticatedOrReadOnly, IsAdminOrReadOnly])
 def update_department(request, pk):
     try:

@@ -1,6 +1,6 @@
 from django.urls import path
 from department import views
-
+ 
 urlpatterns=[
     path("list_department",views.list_department,name="list-department"),
     path('create_department', views.create_department, name='create-department'),

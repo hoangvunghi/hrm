@@ -54,7 +54,7 @@ class UserAccount(AbstractBaseUser, PermissionsMixin):
     ]
 
     status = models.CharField(
-        max_length=10,
+        max_length=10, 
         choices=STATUS_CHOICES,
         default='working',
     )
@@ -121,3 +121,35 @@ class Leave(models.Model):
     def __str__(self):
         return str(self.employee)
 
+
+class Project(models.Model): 
+    proj_id = models.AutoField(primary_key=True)
+    proj_name = models.CharField(max_length=20)
+    proj_value = models.IntegerField()
+    date_start = models.DateField(auto_now=True)
+    date_end = models.DateField()
+    proj_description = models.CharField(max_length=200)
+    manager_id = models.OneToOneField(UserAccount, on_delete=models.CASCADE, null=True)
+    COMPLETE_CHOICES = [
+        ('finished', 'Finished'),
+        ('unfinished', 'Unfinished'),
+    ]
+    complete = models.CharField(
+        max_length=20,
+        choices=COMPLETE_CHOICES,
+        default='unfinished',
+    )
+
+class Task(models.Model):
+    # id = models.AutoField(primary_key=True)
+    proj_id = models.ForeignKey(Project, on_delete=models.CASCADE, null=True)
+    user_id = models.ForeignKey(UserAccount, on_delete=models.SET_NULL, null=True)
+    description = models.TextField()
+
+# class Task(models.Model):
+#     id = models.AutoField(primary_key=True)
+#     title = models.CharField(max_length=255)
+#     description = models.TextField()
+#     completed = models.BooleanField(default=False)
+#     user_id = models.ForeignKey(UserAccount, on_delete=models.SET_NULL, null=True)
+#     proj_id = models.ForeignKey(Project, on_delete=models.SET_NULL, null=True)

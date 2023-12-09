@@ -52,6 +52,8 @@ INSTALLED_APPS = [
     'leave.apps.LeaveConfig',
     'leave_type.apps.LeaveTypeConfig',
     'organization.apps.OrganizationConfig',
+    'project.apps.ProjectConfig',
+    'task.apps.TaskConfig',
     'rest_framework',
     'djoser',
     'rest_framework_swagger',
@@ -151,7 +153,7 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
-STATICFILES_DIRS = [os.path.join(BASE_DIR, 'staticfiles'), ]
+STATICFILES_DIRS = [os.path.join(BASE_DIR, 'staticfiles')]
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
@@ -200,6 +202,9 @@ REST_FRAMEWORK = {
     # ],
 
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    # "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticatedOrReadOnly"),
+        'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    # 'DEFAULT_PERMISSION_CLASSES': ( 'rest_framework.permissions.IsAdminUser', ),
 
 }
 

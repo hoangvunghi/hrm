@@ -26,6 +26,7 @@ from drf_spectacular.utils import extend_schema
 
 #     return redirect('user')
 
+
  
 
 @api_view(["POST",])
@@ -228,20 +229,7 @@ def is_valid_type(request):
                         ,status=status.HTTP_400_BAD_REQUEST)
     return Response({"message": "Data is valid","status":status.HTTP_200_OK}
                     , status=status.HTTP_200_OK)
-
-# def is_valid_type(request):
-#     errors = {}
-#     required_fields = ['username', 'password', 'email', 'phone_number', 
-#                        'last_name', 'first_name',"position_id","date_of_birth",
-#                        "attendance_id","check_in_time","check_out_time","status",
-#                        "department_name","manager","leave_type","employee","start_date",
-#                        "end_date","reason","position_name","organization_name","tax_id","number_of_employees",
-#                        "registration_employees","cost_center","phone","tax","email","address_stress",
-#                        "city","zip_postalcode","country","note"
-#                        ]
     
-
-
 
 
 @api_view(['POST'])
@@ -298,21 +286,6 @@ def validate_account_to_update(obj, request):
     return Response({"error":errors,"status":status.HTTP_400_BAD_REQUEST},
                     status=status.HTTP_400_BAD_REQUEST) 
 
-# def validate_account_to_update(obj, request):
-#     # errors= is_valid_type(request.data)
-#     errors ={}
-
-#     if len(errors):
-#         return Response({"error": errors,"status":status.HTTP_400_BAD_REQUEST},
-#                         status=status.HTTP_400_BAD_REQUEST)
-#     for key in request:
-#         value= request[key]
-#         if key in ['username', 'user_id']:
-#             errors[key]= f"{key} not allowed to change"
-#         if key=='email' and UserAccount.objects.filter(email= value).exclude(user_id= obj.user_id).exists():
-#              errors[key]= f"The email address ({value}) already exists."         
-#     return Response({"error":errors,"status":status.HTTP_400_BAD_REQUEST},
-#                     status=status.HTTP_400_BAD_REQUEST) 
 
 def account_update(obj, validated_data):
     for key in validated_data:
@@ -342,15 +315,15 @@ def update_employee(request, pk):
             return Response({"message":"Password is required"}, status=status.HTTP_400_BAD_REQUEST)
         if 'email' in request.data and not request.data['email']:
             return Response({"message":"Email is required"}, status=status.HTTP_400_BAD_REQUEST)
-        else:
-            new_email = request.data['email']
+        if 'email' in request.data:
+            email = request.data['email']
             email_regex = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
-            if not re.match(email_regex, new_email):
+            if not re.match(email_regex, email):
                 return Response({"message": "Invalid email format", "status":status.HTTP_400_BAD_REQUEST},
                                 status=status.HTTP_400_BAD_REQUEST)
         if 'phone_number' in request.data and not request.data['phone_number']:
             return Response({"message":"Phone number is required"}, status=status.HTTP_400_BAD_REQUEST)
-        else:
+        if 'phone_number' in request.data:
             phone_number = request.data['phone_number']
             phone_regex = r'^[0-9]+$'
             if not re.match(phone_regex, phone_number) or len(phone_number) != 10:
@@ -360,14 +333,7 @@ def update_employee(request, pk):
         return Response({"messeger": "update successfully", "data":str(serializer.data),
                             "status": status.HTTP_200_OK}, status=status.HTTP_200_OK)
         
-        # serializer = UserAccountSerializer(employee, data=request.data, partial=True)
-        # if serializer.is_valid():
-        #     serializer.save()
-        #     return Response(serializer.data, status=status.HTTP_200_OK)
-        
-        # error= serializer.errors
-        # error['messesge']= "ssssss"
-        # return Response(error, status=status.HTTP_400_BAD_REQUEST)
+
     
 
 
