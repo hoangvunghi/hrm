@@ -210,7 +210,7 @@ def is_valid_type(request):
         errors['password'] = 'Password is required'
     if 'email'  in request.data and not request.data['email']:
         errors['email'] = 'Email is required'
-    else:
+    if 'email'  in request.data and  request.data['email'] !="":
         new_email = request.data['email'].lower()
         email_regex = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
         if not re.match(email_regex, new_email):
@@ -218,14 +218,14 @@ def is_valid_type(request):
                             status=status.HTTP_400_BAD_REQUEST)
     if 'phone_number'  in request.data and not request.data['phone_number']:
         errors['phone_number'] = 'Phone number is required'
-    else:
+    if 'phone_number'  in request.data and  request.data['phone_number'] !="":
         phone_number = request.data['phone_number']
         phone_regex = r'^[0-9]+$'
         if not re.match(phone_regex, phone_number) or len(phone_number) != 10:
             errors['phone_number'] = 'Invalid phone number format.'
 
     if errors:
-        return Response(errors,{"status":status.HTTP_400_BAD_REQUEST} 
+        return Response(errors
                         ,status=status.HTTP_400_BAD_REQUEST)
     return Response({"message": "Data is valid","status":status.HTTP_200_OK}
                     , status=status.HTTP_200_OK)
@@ -303,31 +303,34 @@ def update_employee(request, pk):
         return Response({"error": "Employee not found","status":status.HTTP_404_NOT_FOUND},
                         status=status.HTTP_404_NOT_FOUND)
     if request.method == 'PATCH':
-   
+        validation_response = is_valid_type(request)
+        if validation_response.status_code != status.HTTP_200_OK:
+            return validation_response
+
         # validate_account_to_update(employee, request.data)
         # if len(errors):
         #     return Response({"error": errors}, status=status.HTTP_400_BAD_REQUEST)
         serializer=UserAccountSerializer(employee)
         
-        if 'username' in request.data and not request.data['username']:
-            return Response({"message":"Username is required"}, status=status.HTTP_400_BAD_REQUEST)
-        if 'password' in request.data and not request.data['password']:
-            return Response({"message":"Password is required"}, status=status.HTTP_400_BAD_REQUEST)
-        if 'email' in request.data and not request.data['email']:
-            return Response({"message":"Email is required"}, status=status.HTTP_400_BAD_REQUEST)
-        if 'email' in request.data:
-            email = request.data['email']
-            email_regex = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
-            if not re.match(email_regex, email):
-                return Response({"message": "Invalid email format", "status":status.HTTP_400_BAD_REQUEST},
-                                status=status.HTTP_400_BAD_REQUEST)
-        if 'phone_number' in request.data and not request.data['phone_number']:
-            return Response({"message":"Phone number is required"}, status=status.HTTP_400_BAD_REQUEST)
-        if 'phone_number' in request.data:
-            phone_number = request.data['phone_number']
-            phone_regex = r'^[0-9]+$'
-            if not re.match(phone_regex, phone_number) or len(phone_number) != 10:
-                return Response({"message":"Invalid phone number format", "status":status.HTTP_400_BAD_REQUEST}, status=status.HTTP_400_BAD_REQUEST)
+        # if 'username' in request.data and not request.data['username']:
+        #     return Response({"message":"Username is required"}, status=status.HTTP_400_BAD_REQUEST)
+        # if 'password' in request.data and not request.data['password']:
+        #     return Response({"message":"Password is required"}, status=status.HTTP_400_BAD_REQUEST)
+        # if 'email' in request.data and not request.data['email']:
+        #     return Response({"message":"Email is required"}, status=status.HTTP_400_BAD_REQUEST)
+        # if 'email' in request.data:
+        #     email = request.data['email']
+        #     email_regex = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
+        #     if not re.match(email_regex, email):
+        #         return Response({"message": "Invalid email format", "status":status.HTTP_400_BAD_REQUEST},
+        #                         status=status.HTTP_400_BAD_REQUEST)
+        # if 'phone_number' in request.data and not request.data['phone_number']:
+        #     return Response({"message":"Phone number is required"}, status=status.HTTP_400_BAD_REQUEST)
+        # if 'phone_number' in request.data:
+        #     phone_number = request.data['phone_number']
+        #     phone_regex = r'^[0-9]+$'
+        #     if not re.match(phone_regex, phone_number) or len(phone_number) != 10:
+        #         return Response({"message":"Invalid phone number format", "status":status.HTTP_400_BAD_REQUEST}, status=status.HTTP_400_BAD_REQUEST)
         
         account_update(employee, request.data)
         return Response({"messeger": "update successfully", "data":str(serializer.data),
