@@ -56,7 +56,12 @@ def delete_position(request, pk):
 @permission_classes([permissions.IsAuthenticatedOrReadOnly, IsAdminOrReadOnly])
 def create_position(request):
     serializer = PositionsSerializer(data=request.data)
-    is_valid_type(serializer.data)
+    required_fields = ['position_name']
+
+    for field in required_fields:
+        if not request.data.get(field):
+            return Response({"error": f"{field.capitalize()} is required","status":status.HTTP_400_BAD_REQUEST},
+                            status=status.HTTP_400_BAD_REQUEST)
     if serializer.is_valid():
         position_id = request.data.get('position_id', None)
 
@@ -81,7 +86,9 @@ def update_position(request, pk):
 
     if request.method == 'PATCH':
         serializer = PositionsSerializer(position, data=request.data)
-        is_valid_type(serializer.data)
+        validation_response = is_valid_type(request)
+        if validation_response.status_code != status.HTTP_200_OK:
+            return validation_response
         if serializer.is_valid():
             user_id = request.data.get('user_id', None)
             if user_id is not None and not UserAccount.objects.filter(user_id=user_id).exists():
@@ -90,5 +97,5 @@ def update_position(request, pk):
             
             serializer.save()
             return Response(serializer.data, {"status":status.HTTP_200_OK},status=status.HTTP_200_OK)
-        return Response(serializer.errors,{"status":status.HTTP_400_BAD_REQUEST} 
+        return Response({"error":str(serializer.errors,),"status":status.HTTP_400_BAD_REQUEST} 
                         ,status=status.HTTP_400_BAD_REQUEST)

@@ -58,6 +58,13 @@ def delete_department(request, pk):
 def create_department(request):
     serializer = DepartmentSerializer(data=request.data)
     # is_valid_type(serializer.data)
+    required_fields = ['department_name',"manager"]
+
+    for field in required_fields:
+        if not request.data.get(field):
+            return Response({"error": f"{field.capitalize()} is required","status":status.HTTP_400_BAD_REQUEST},
+                            status=status.HTTP_400_BAD_REQUEST)
+            
     if serializer.is_valid():
         department_id = request.data.get('department_id', None)
         department_name = request.data.get('department_name', None)
@@ -87,14 +94,16 @@ def update_department(request, pk):
 
     if request.method == 'PATCH':
         serializer = DepartmentSerializer(department, data=request.data)
-        # is_valid_type(serializer.data)
+        validation_response = is_valid_type(request)
+        if validation_response.status_code != status.HTTP_200_OK:
+            return validation_response
         if serializer.is_valid():
             user_id = request.data.get('user_id', None)
             if user_id is not None and not UserAccount.objects.filter(user_id=user_id).exists():
                 return Response({"error": "UserAccount not found","status":status.HTTP_400_BAD_REQUEST},
                                 status=status.HTTP_400_BAD_REQUEST)
             serializer.save()
-            return Response(serializer.data, {'status':status.HTTP_200_OK},
+            return Response({ "data":str(serializer.data),'status':status.HTTP_200_OK},
                             status=status.HTTP_200_OK)
         return Response(serializer.errors,
                         status=status.HTTP_400_BAD_REQUEST)

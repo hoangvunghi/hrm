@@ -36,7 +36,9 @@ def update_organization(request):
 
     if request.method == 'PATCH':
         serializer = OrganizationSerializer(organization_instance, data=request.data)
-        is_valid_type(serializer.data)
+        validation_response = is_valid_type(request)
+        if validation_response.status_code != status.HTTP_200_OK:
+            return validation_response
         if serializer.is_valid():
             serializer.save()
             return Response(

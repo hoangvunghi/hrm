@@ -29,23 +29,7 @@ from drf_spectacular.utils import extend_schema
 
  
 
-@api_view(["POST",])
-def find_employee(request):
-    q=request.GET.get('q') if request.GET.get('q')!=None else ''
-    employees=UserAccount.objects.filter(
-        Q(username__icontains=q) |
-        Q(name__icontains=q)|
-        Q(first_name__icontains=q)|
-        Q(last_name__icontains=q)|
-        Q(position__position_name__icontains=q)| 
-        Q(last_name__icontains=q)
-    )
-    # serializer = UserAccountSerializer(employee, many=True)
-    # return Response(serializer.data)
-    usernames = employees.values_list('username', flat=True)
-    return Response({'usernames': list(usernames),
-                     "status":status.HTTP_200_OK},
-                    status=status.HTTP_200_OK)
+
 
 
 @api_view(["GET",])
@@ -197,8 +181,9 @@ def is_valid_type(request):
                        'last_name', 'first_name',"position_id","date_of_birth",
                        "attendance_id","check_in_time","check_out_time","status",
                        "department_name","manager","leave_type","employee","start_date",
-                       "end_date","reason","position_name","organization_name","tax_id","number_of_employees",
-                       "registration_employees","cost_center","phone","tax","email","address_stress",
+                       "end_date","reason","position_name","organization_name","tax_id",
+                       "number_of_employees","registration_employees","cost_center",
+                       "phone","tax","email","address_stress",
                        "city","zip_postalcode","country","note"
                        ]
     for field in required_fields:
@@ -235,28 +220,47 @@ def is_valid_type(request):
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticatedOrReadOnly, IsAdminOrReadOnly])
 def create_employee(request):
+    
     serializer = UserAccountSerializer(data=request.data)
     # is_valid_type(serializer.data)
-    if 'username' in request.data and not request.data['username']:
-        return Response({"message":"Username is required"}, status=status.HTTP_400_BAD_REQUEST)
-    if 'password' in request.data and not request.data['password']:
-        return Response({"message":"Password is required"}, status=status.HTTP_400_BAD_REQUEST)
-    if 'email' in request.data and not request.data['email']:
-        return Response({"message":"Email is required"}, status=status.HTTP_400_BAD_REQUEST)
-    else:
-        new_email = request.data['email']
-        email_regex = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
-        if not re.match(email_regex, new_email):
-            return Response({"message": "Invalid email format", "status":status.HTTP_400_BAD_REQUEST},
-                            status=status.HTTP_400_BAD_REQUEST)
-    if 'phone_number' in request.data and not request.data['phone_number']:
-        return Response({"message":"Phone number is required"}, status=status.HTTP_400_BAD_REQUEST)
-    else:
-        phone_number = request.data['phone_number']
-        phone_regex = r'^[0-9]+$'
-        if not re.match(phone_regex, phone_number) or len(phone_number) != 10:
-            return Response({"message":"Invalid phone number format", "status":status.HTTP_400_BAD_REQUEST}, status=status.HTTP_400_BAD_REQUEST)
+    # if request.data['username']=="":
+    #     return Response({"message":"Username is required"}, status=status.HTTP_400_BAD_REQUEST)
+    # if  request.data['password']=="":
+    #     return Response({"message":"Password is required"}, status=status.HTTP_400_BAD_REQUEST)
+    # if   request.data['email']=="":
+    #     return Response({"message":"Email is required"}, status=status.HTTP_400_BAD_REQUEST)
+    # if request.data["email"] !="":
+    #     new_email = request.data['email']
+    #     email_regex = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
+    #     if not re.match(email_regex, new_email):
+    #         return Response({"message": "Invalid email format", "status":status.HTTP_400_BAD_REQUEST},
+    #                         status=status.HTTP_400_BAD_REQUEST)
+    # if 'phone_number' in request.data and not request.data['phone_number']:
+    #     return Response({"message":"Phone number is required"}, status=status.HTTP_400_BAD_REQUEST)
+    # if request.data["phone_number "] !="":
+    #     phone_number = request.data['phone_number']
+    #     phone_regex = r'^[0-9]+$'
+    #     if not re.match(phone_regex, phone_number) or len(phone_number) != 10:
+    #         return Response({"message":"Invalid phone number format", "status":status.HTTP_400_BAD_REQUEST}, status=status.HTTP_400_BAD_REQUEST)
 
+    required_fields = ['username', 'password', 'email',"name"]
+
+    for field in required_fields:
+        if not request.data.get(field):
+            return Response({"error": f"{field.capitalize()} is required","status":status.HTTP_400_BAD_REQUEST},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+    new_email = request.data.get('email', '')
+    email_regex = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
+    if not re.match(email_regex, new_email):
+        return Response({"error": "Invalid email format"},
+                        status=status.HTTP_400_BAD_REQUEST)
+
+    phone_number = request.data.get('phone_number', '')
+    phone_regex = r'^[0-9]+$'
+    if phone_number and (not re.match(phone_regex, phone_number) or len(phone_number) != 10):
+        return Response({"error": "Invalid phone number format","status":status.HTTP_400_BAD_REQUEST},
+                        status=status.HTTP_400_BAD_REQUEST)
     if serializer.is_valid():
         user_id = request.data.get('user_id', None)
 
@@ -335,19 +339,37 @@ def update_employee(request, pk):
         account_update(employee, request.data)
         return Response({"messeger": "update successfully", "data":str(serializer.data),
                             "status": status.HTTP_200_OK}, status=status.HTTP_200_OK)
-        
+    
+@api_view(["POST",])
+def find_employee(request):
+    q=request.GET.get('q') if request.GET.get('q')!=None else ''
+    employees=UserAccount.objects.filter(
+        Q(username__icontains=q) |
+        Q(name__icontains=q)|
+        Q(first_name__icontains=q)|
+        Q(last_name__icontains=q)|
+        Q(position__position_name__icontains=q)| 
+        Q(last_name__icontains=q)
+    )
+    # serializer = UserAccountSerializer(employee, many=True)
+    # return Response(serializer.data)
+    usernames = employees.values_list('username', flat=True)
+    return Response({'usernames': list(usernames),
+                     "status":status.HTTP_200_OK},
+                    status=status.HTTP_200_OK)
 
     
 
-
+#đã test
 # @extend_schema(responses=UserAccountSerializer)
 @api_view(["GET"])
 @permission_classes([IsAdminOrReadOnly])
-def list_employee(request, pg):
-    page_number = request.GET.get('page', pg)
-    
-    items_per_page = 20
+def list_employee(request):
+    page_index = request.GET.get('page_index', 1)
+    page_size = request.GET.get('page_size', 20)
     order_by = request.GET.get('order_by', 'user_id')  
+    search_query = request.GET.get('q', '')
+
     allowed_order_fields = ['user_id', 'name', 'date_of_hire', '-user_id', '-date_of_hire']
 
     if order_by not in allowed_order_fields:
@@ -355,14 +377,33 @@ def list_employee(request, pg):
                          "status": status.HTTP_400_BAD_REQUEST},
                         status=status.HTTP_400_BAD_REQUEST)
 
+    try:
+        page_size = int(page_size)
+    except ValueError:
+        return Response({"error": "Invalid value for items_per_page. Must be an integer.",
+                         "status": status.HTTP_400_BAD_REQUEST},
+                        status=status.HTTP_400_BAD_REQUEST)
+
+    allowed_values = [10, 20, 30, 40, 50]
+    if page_size not in allowed_values:
+        return Response({"error": f"Invalid value for items_per_page. Allowed values are: {', '.join(map(str, allowed_values))}.",
+                         "status": status.HTTP_400_BAD_REQUEST},
+                        status=status.HTTP_400_BAD_REQUEST)
+
     total_employees = UserAccount.objects.count()
 
-    all_employees = UserAccount.objects.all().order_by(order_by)
-    paginator = Paginator(all_employees, items_per_page)
-    
+    employees = UserAccount.objects.filter(
+        Q(username__icontains=search_query) |
+        Q(name__icontains=search_query)|
+        Q(first_name__icontains=search_query)|
+        Q(last_name__icontains=search_query)|
+        Q(last_name__icontains=search_query)
+    ).order_by(order_by)
+
+    paginator = Paginator(employees, page_size)
 
     try:
-        current_page_data = paginator.page(page_number)
+        current_page_data = paginator.page(page_index)
     except EmptyPage:
         return Response({"error": "Page not found",
                          "status": status.HTTP_404_NOT_FOUND},
@@ -372,12 +413,10 @@ def list_employee(request, pg):
     serialized_data = serializer.data
     return Response({
         "total_employees": total_employees,
-        "current_page": page_number,
+        "current_page": page_index,
         "data": serialized_data,
         "status": status.HTTP_200_OK,
     }, status=status.HTTP_200_OK)
-
-
 
 
 

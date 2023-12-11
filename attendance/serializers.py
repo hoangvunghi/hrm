@@ -1,28 +1,23 @@
-from base.models import Attendance
 from rest_framework import serializers
-
+from base.models import UserAccount, Attendance
 
 class AttendanceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Attendance
-        # fields = ["check_out_time","employee_id"]
-        fields="__all__"
+        fields = "__all__" 
         
+
+class UserAccountWithAttendanceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserAccount
+        fields = ('user_id', 'email', 'name', 'is_active', 'is_staff', 'username', 'first_name', 'last_name', 'phone_number', 'address', 'date_of_birth', 'date_of_hire', 'status')
+
+class AttendanceWithUserAccountSerializer(serializers.ModelSerializer):
+    employee_id = UserAccountWithAttendanceSerializer(source='employee', read_only=True)
+
+    class Meta:
+        model = Attendance
+        fields = '__all__'
+
         
-# class Attendance(models.Model):
-#     attendance_id = models.AutoField(primary_key=True)
-#     employee_id = models.ForeignKey(UserAccount, on_delete=models.CASCADE)
-#     attendance_date = models.DateField(auto_now=True)
-#     check_in_time = models.DateTimeField(auto_now=True)
-#     check_out_time = models.DateTimeField()
-    
-#     STATUS_CHOICES = [
-#         ('ontime', 'OnTime'),
-#         ('late', 'Late'),
-#         ('absent', 'Absent'),
-#     ]
-#     status = models.CharField(
-#         max_length=10,
-#         choices=STATUS_CHOICES,
-#         default='ontime',
-#     )
+

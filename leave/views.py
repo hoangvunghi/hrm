@@ -59,7 +59,12 @@ def delete_leave(request, pk):
 @permission_classes([permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadonly])
 def create_leave(request):
     serializer = LeaveSerializer(data=request.data)
-    is_valid_type(serializer.data)
+    required_fields = ["leave_type"]
+
+    for field in required_fields:
+        if not request.data.get(field):
+            return Response({"error": f"{field.capitalize()} is required","status":status.HTTP_400_BAD_REQUEST},
+                            status=status.HTTP_400_BAD_REQUEST)
     if serializer.is_valid():
         leave_id = request.data.get('leave_id', None)
 
@@ -88,7 +93,9 @@ def update_leave(request, pk):
 
     if request.method == 'PATCH':
         serializer = LeaveSerializer(leave, data=request.data)
-        is_valid_type(serializer.data)
+        validation_response = is_valid_type(request)
+        if validation_response.status_code != status.HTTP_200_OK:
+            return validation_response
         if serializer.is_valid():
             user_id = request.data.get('user_id', None)
             if user_id is not None and not UserAccount.objects.filter(user_id=user_id).exists():
