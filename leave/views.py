@@ -6,7 +6,7 @@ from .serializers import LeaveSerializer,UserAccountWithLeaveSerializer,LeaveWit
 from rest_framework import permissions
 from base.permissions import IsAdminOrReadOnly, IsOwnerOrReadonly
 from django.http import Http404
-from base.views import is_valid_type
+from base.views import is_valid_type,obj_update,validate_to_update
 from django.core.paginator import Paginator,EmptyPage
 
 @api_view(["GET"])
@@ -118,31 +118,49 @@ def create_leave(request):
                     status=status.HTTP_400_BAD_REQUEST)
 
 
+# @api_view(['PATCH'])
+# @permission_classes([permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadonly])
+# def update_leave(request, pk):
+#     try:
+#         leave = Leave.objects.get(leave_id=pk)
+#     except Leave.DoesNotExist:
+#         return Response({"error": "Leave not found", 
+#                          "status": status.HTTP_404_NOT_FOUND}, 
+#                         status=status.HTTP_404_NOT_FOUND)
+
+#     if request.method == 'PATCH':
+#         serializer = LeaveSerializer(leave, data=request.data)
+#         validation_response = is_valid_type(request)
+#         if validation_response.status_code != status.HTTP_200_OK:
+#             return validation_response
+#         if serializer.is_valid():
+#             user_id = request.data.get('user_id', None)
+#             if user_id is not None and not UserAccount.objects.filter(user_id=user_id).exists():
+#                 return Response({"error": "UserAccount not found", 
+#                                  "status": status.HTTP_400_BAD_REQUEST}, 
+#                                 status=status.HTTP_400_BAD_REQUEST)
+            
+#             serializer.save()
+#             return Response(serializer.data,{"status":status.HTTP_200_OK}, 
+#                             status=status.HTTP_200_OK)
+#         return Response(serializer.errors,{"status":status.HTTP_400_BAD_REQUEST},
+#                         status=status.HTTP_400_BAD_REQUEST)
+
+
+
 @api_view(['PATCH'])
 @permission_classes([permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadonly])
 def update_leave(request, pk):
     try:
         leave = Leave.objects.get(leave_id=pk)
     except Leave.DoesNotExist:
-        return Response({"error": "Leave not found", 
-                         "status": status.HTTP_404_NOT_FOUND}, 
-                        status=status.HTTP_404_NOT_FOUND)
-
+        return Response({"error": "Leave not found"}, status=status.HTTP_404_NOT_FOUND)
     if request.method == 'PATCH':
-        serializer = LeaveSerializer(leave, data=request.data)
-        validation_response = is_valid_type(request)
-        if validation_response.status_code != status.HTTP_200_OK:
-            return validation_response
-        if serializer.is_valid():
-            user_id = request.data.get('user_id', None)
-            if user_id is not None and not UserAccount.objects.filter(user_id=user_id).exists():
-                return Response({"error": "UserAccount not found", 
-                                 "status": status.HTTP_400_BAD_REQUEST}, 
-                                status=status.HTTP_400_BAD_REQUEST)
-            
-            serializer.save()
-            return Response(serializer.data,{"status":status.HTTP_200_OK}, 
-                            status=status.HTTP_200_OK)
-        return Response(serializer.errors,{"status":status.HTTP_400_BAD_REQUEST},
-                        status=status.HTTP_400_BAD_REQUEST)
+        errors= validate_to_update(leave, request.data)
+        if len(errors):
+            return Response({"error": errors}, status=status.HTTP_400_BAD_REQUEST)
+        obj_update(leave, request.data)
+        serializer=LeaveSerializer(leave)
+        
 
+        return Response({"messeger": "update succesfull", "data": str(serializer.data)}, status=status.HTTP_200_OK)

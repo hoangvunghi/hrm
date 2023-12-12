@@ -12,7 +12,7 @@ urlpatterns=[
     path('employee/update_employee/<str:pk>', views.update_employee, name='update-employee'),
     path('employee/delete_employee/<str:pk>', views.delete_employee, name='delete-employee'),
     path('change_password/<str:pk>', views.change_password, name='change-password'),
-    path('find_employee/', views.find_employee, name='find_employee'),
+    path('find_employee', views.find_employee, name='find_employee'),
     path("",views.a),
     path("employee/list_employee",views.list_employee,name="list-employee"), 
 ]

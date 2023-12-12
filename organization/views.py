@@ -5,7 +5,7 @@ from .models import Organization
 from .serializers import OrganizationSerializer
 from django.core.exceptions import ObjectDoesNotExist
 from base.permissions import IsAdminOrReadOnly, IsOwnerOrReadonly
-from base.views import is_valid_type
+from base.views import is_valid_type,obj_update,validate_to_update
 from django.core.paginator import Paginator,EmptyPage
 
 
@@ -16,36 +16,28 @@ def view_organization(request):
     try:
         organization = Organization.objects.get(pk=1) 
         serializer = OrganizationSerializer(organization) 
-        return Response(serializer.data)
+        return Response({"data":[serializer.data],"status":status.HTTP_200_OK},status=status.HTTP_200_OK)
     except Organization.DoesNotExist:
         return Response({"error": "organization does not exits","status":status.HTTP_404_NOT_FOUND},
                         status=status.HTTP_404_NOT_FOUND)
 
 
 
-@api_view([ 'PATCH'])
-@permission_classes([permissions.IsAuthenticatedOrReadOnly, IsAdminOrReadOnly])
-def update_organization(request):
+
+@api_view(['PATCH'])
+@permission_classes([permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadonly])
+def update_organization(request, pk):
     try:
-        organization_instance = Organization.load()
+        org = Organization.load()
     except ObjectDoesNotExist:
         return Response(
             {"error": "Organization not found", "status": status.HTTP_404_NOT_FOUND},
             status=status.HTTP_404_NOT_FOUND
         )
-
     if request.method == 'PATCH':
-        serializer = OrganizationSerializer(organization_instance, data=request.data)
-        validation_response = is_valid_type(request)
-        if validation_response.status_code != status.HTTP_200_OK:
-            return validation_response
-        if serializer.is_valid():
-            serializer.save()
-            return Response(
-                {"message": "Organization information updated", "status": status.HTTP_200_OK},
-                status=status.HTTP_200_OK
-            )
-        return Response(
-            {"error": serializer.errors, "status": status.HTTP_400_BAD_REQUEST},
-            status=status.HTTP_400_BAD_REQUEST
-        )
+        errors= validate_to_update(org, request.data)
+        if len(errors):
+            return Response({"error": errors}, status=status.HTTP_400_BAD_REQUEST)
+        obj_update(org, request.data)
+        serializer=OrganizationSerializer(org)
+        return Response({"messeger": "update succesfull", "data": str(serializer.data)}, status=status.HTTP_200_OK)

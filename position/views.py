@@ -5,7 +5,7 @@ from base.models import UserAccount, Positions
 from .serializers import PositionsSerializer,UserAccountWithPositionSerializer,PositionWithUserAccountSerializer
 from base.permissions import IsAdminOrReadOnly, IsOwnerOrReadonly
 from django.http import Http404
-from base.views import is_valid_type
+from base.views import is_valid_type,obj_update,validate_to_update
 from django.core.paginator import Paginator,EmptyPage
 
 
@@ -112,27 +112,18 @@ def create_position(request):
     return Response(serializer.errors,{"status":status.HTTP_400_BAD_REQUEST},
                     status=status.HTTP_400_BAD_REQUEST)
 
+
 @api_view(['PATCH'])
-@permission_classes([permissions.IsAuthenticatedOrReadOnly, IsAdminOrReadOnly])
+@permission_classes([permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadonly])
 def update_position(request, pk):
     try:
-        position = Positions.objects.get(position_id=pk)
+        possition = Positions.objects.get(position_id=pk)
     except Positions.DoesNotExist:
-        return Response({"error": "Position not found",
-                         "status":status.HTTP_404_NOT_FOUND}, status=status.HTTP_404_NOT_FOUND)
-
+        return Response({"error": "Position not found"}, status=status.HTTP_404_NOT_FOUND)
     if request.method == 'PATCH':
-        serializer = PositionsSerializer(position, data=request.data)
-        validation_response = is_valid_type(request)
-        if validation_response.status_code != status.HTTP_200_OK:
-            return validation_response
-        if serializer.is_valid():
-            user_id = request.data.get('user_id', None)
-            if user_id is not None and not UserAccount.objects.filter(user_id=user_id).exists():
-                return Response({"error": "User not found",
-                                 "status":status.HTTP_400_BAD_REQUEST}, status=status.HTTP_400_BAD_REQUEST)
-            
-            serializer.save()
-            return Response(serializer.data, {"status":status.HTTP_200_OK},status=status.HTTP_200_OK)
-        return Response({"error":str(serializer.errors,),"status":status.HTTP_400_BAD_REQUEST} 
-                        ,status=status.HTTP_400_BAD_REQUEST)
+        errors= validate_to_update(possition, request.data)
+        if len(errors):
+            return Response({"error": errors}, status=status.HTTP_400_BAD_REQUEST)
+        obj_update(possition, request.data)
+        serializer=PositionsSerializer(possition)
+        return Response({"messeger": "update succesfull", "data": str(serializer.data)}, status=status.HTTP_200_OK)

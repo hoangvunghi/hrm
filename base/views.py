@@ -175,6 +175,8 @@ def delete_employee(request, pk):
                         status=status.HTTP_204_NO_CONTENT)
 
 
+
+
 def is_valid_type(request): 
     errors = {}
     required_fields = ['username', 'password', 'email', 'phone_number', 
@@ -214,7 +216,6 @@ def is_valid_type(request):
                         ,status=status.HTTP_400_BAD_REQUEST)
     return Response({"message": "Data is valid","status":status.HTTP_200_OK}
                     , status=status.HTTP_200_OK)
-    
 
 
 @api_view(['POST'])
@@ -222,26 +223,6 @@ def is_valid_type(request):
 def create_employee(request):
     
     serializer = UserAccountSerializer(data=request.data)
-    # is_valid_type(serializer.data)
-    # if request.data['username']=="":
-    #     return Response({"message":"Username is required"}, status=status.HTTP_400_BAD_REQUEST)
-    # if  request.data['password']=="":
-    #     return Response({"message":"Password is required"}, status=status.HTTP_400_BAD_REQUEST)
-    # if   request.data['email']=="":
-    #     return Response({"message":"Email is required"}, status=status.HTTP_400_BAD_REQUEST)
-    # if request.data["email"] !="":
-    #     new_email = request.data['email']
-    #     email_regex = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
-    #     if not re.match(email_regex, new_email):
-    #         return Response({"message": "Invalid email format", "status":status.HTTP_400_BAD_REQUEST},
-    #                         status=status.HTTP_400_BAD_REQUEST)
-    # if 'phone_number' in request.data and not request.data['phone_number']:
-    #     return Response({"message":"Phone number is required"}, status=status.HTTP_400_BAD_REQUEST)
-    # if request.data["phone_number "] !="":
-    #     phone_number = request.data['phone_number']
-    #     phone_regex = r'^[0-9]+$'
-    #     if not re.match(phone_regex, phone_number) or len(phone_number) != 10:
-    #         return Response({"message":"Invalid phone number format", "status":status.HTTP_400_BAD_REQUEST}, status=status.HTTP_400_BAD_REQUEST)
 
     required_fields = ['username', 'password', 'email',"name"]
 
@@ -276,22 +257,20 @@ def create_employee(request):
 
 
 
-def validate_account_to_update(obj, request):
-    errors= is_valid_type(request)
-    if len(errors):
-        return Response({"error": errors,"status":status.HTTP_400_BAD_REQUEST},
-                        status=status.HTTP_400_BAD_REQUEST)
-    for key in request:
-        value= request[key]
-        if key in ['username', 'user_id']:
+def validate_to_update(obj, data):
+    # obj da ton tai
+    errors={}
+    dict=['username', 'user_id',"department_id","leave_id","leave_type_id","position_id"]
+    for key in data:
+        value= data[key]
+        if key in dict:
             errors[key]= f"{key} not allowed to change"
+        
         if key=='email' and UserAccount.objects.filter(email= value).exclude(user_id= obj.user_id).exists():
-             errors[key]= f"The email address ({value}) already exists."         
-    return Response({"error":errors,"status":status.HTTP_400_BAD_REQUEST},
-                    status=status.HTTP_400_BAD_REQUEST) 
+            errors[key]= f"email ({value}) is really exists"        
+    return errors 
 
-
-def account_update(obj, validated_data):
+def obj_update(obj, validated_data):
     for key in validated_data:
         setattr(obj, key, validated_data[key])
         print(getattr(obj, key))
@@ -304,42 +283,34 @@ def update_employee(request, pk):
     try:
         employee = UserAccount.objects.get(user_id=pk)
     except UserAccount.DoesNotExist:
-        return Response({"error": "Employee not found","status":status.HTTP_404_NOT_FOUND},
-                        status=status.HTTP_404_NOT_FOUND)
+        return Response({"error": "Employee not found"}, status=status.HTTP_404_NOT_FOUND)
     if request.method == 'PATCH':
-        validation_response = is_valid_type(request)
-        if validation_response.status_code != status.HTTP_200_OK:
-            return validation_response
-
-        # validate_account_to_update(employee, request.data)
-        # if len(errors):
-        #     return Response({"error": errors}, status=status.HTTP_400_BAD_REQUEST)
+        errors= validate_to_update(employee, request.data)
+        if len(errors):
+            return Response({"error": errors}, status=status.HTTP_400_BAD_REQUEST)
+        obj_update(employee, request.data)
         serializer=UserAccountSerializer(employee)
+        new_email = request.data.get('email', '')
+        email_regex = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
+        if not re.match(email_regex, new_email):
+            return Response({"error": "Invalid email format"},
+                            status=status.HTTP_400_BAD_REQUEST)
+        phone_number = request.data.get('phone_number', '')
+        phone_regex = r'^[0-9]+$'
+        if phone_number and (not re.match(phone_regex, phone_number) or len(phone_number) != 10):
+            return Response({"error": "Invalid phone number format","status":status.HTTP_400_BAD_REQUEST},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        return Response({"messeger": "update succesfull", "data": str(serializer.data)}, status=status.HTTP_200_OK)
         
-        # if 'username' in request.data and not request.data['username']:
-        #     return Response({"message":"Username is required"}, status=status.HTTP_400_BAD_REQUEST)
-        # if 'password' in request.data and not request.data['password']:
-        #     return Response({"message":"Password is required"}, status=status.HTTP_400_BAD_REQUEST)
-        # if 'email' in request.data and not request.data['email']:
-        #     return Response({"message":"Email is required"}, status=status.HTTP_400_BAD_REQUEST)
-        # if 'email' in request.data:
-        #     email = request.data['email']
-        #     email_regex = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
-        #     if not re.match(email_regex, email):
-        #         return Response({"message": "Invalid email format", "status":status.HTTP_400_BAD_REQUEST},
-        #                         status=status.HTTP_400_BAD_REQUEST)
-        # if 'phone_number' in request.data and not request.data['phone_number']:
-        #     return Response({"message":"Phone number is required"}, status=status.HTTP_400_BAD_REQUEST)
-        # if 'phone_number' in request.data:
-        #     phone_number = request.data['phone_number']
-        #     phone_regex = r'^[0-9]+$'
-        #     if not re.match(phone_regex, phone_number) or len(phone_number) != 10:
-        #         return Response({"message":"Invalid phone number format", "status":status.HTTP_400_BAD_REQUEST}, status=status.HTTP_400_BAD_REQUEST)
+        # serializer = UserAccountSerializer(employee, data=request.data, partial=True)
+        # if serializer.is_valid():
+        #     serializer.save()
+        #     return Response(serializer.data, status=status.HTTP_200_OK)
         
-        account_update(employee, request.data)
-        return Response({"messeger": "update successfully", "data":str(serializer.data),
-                            "status": status.HTTP_200_OK}, status=status.HTTP_200_OK)
-    
+        # error= serializer.errors
+        # error['messesge']= "ssssss"
+        # return Response(error, status=status.HTTP_400_BAD_REQUEST)
 @api_view(["POST",])
 def find_employee(request):
     q=request.GET.get('q') if request.GET.get('q')!=None else ''

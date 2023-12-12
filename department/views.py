@@ -5,7 +5,7 @@ from base.models import UserAccount, Department
 from .serializers import DepartmentSerializer,UserAccountWithDepartmentSerializer,DepartmentWithUserAccountSerializer
 from base.permissions import IsAdminOrReadOnly, IsOwnerOrReadonly
 from django.http import Http404
-from base.views import is_valid_type
+from base.views import is_valid_type,validate_to_update,obj_update
 from django.core.paginator import Paginator,EmptyPage
 
 
@@ -120,27 +120,49 @@ def create_department(request):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-@api_view(['PATCH']) 
-@permission_classes([permissions.IsAuthenticatedOrReadOnly, IsAdminOrReadOnly])
+
+
+@api_view(['PATCH'])
+@permission_classes([permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadonly])
 def update_department(request, pk):
     try:
         department = Department.objects.get(department_id=pk)
     except Department.DoesNotExist:
-        return Response({"error": "Department not found","status":status.HTTP_404_NOT_FOUND}, 
-                        status=status.HTTP_404_NOT_FOUND)
-
+        return Response({"error": "Department not found"}, status=status.HTTP_404_NOT_FOUND)
     if request.method == 'PATCH':
-        serializer = DepartmentSerializer(department, data=request.data)
-        validation_response = is_valid_type(request)
-        if validation_response.status_code != status.HTTP_200_OK:
-            return validation_response
-        if serializer.is_valid():
-            user_id = request.data.get('user_id', None)
-            if user_id is not None and not UserAccount.objects.filter(user_id=user_id).exists():
-                return Response({"error": "UserAccount not found","status":status.HTTP_400_BAD_REQUEST},
-                                status=status.HTTP_400_BAD_REQUEST)
-            serializer.save()
-            return Response({ "data":str(serializer.data),'status':status.HTTP_200_OK},
-                            status=status.HTTP_200_OK)
-        return Response(serializer.errors,
-                        status=status.HTTP_400_BAD_REQUEST)
+        errors= validate_to_update(department, request.data)
+        if len(errors):
+            return Response({"error": errors}, status=status.HTTP_400_BAD_REQUEST)
+        obj_update(department, request.data)
+        serializer=DepartmentSerializer(department)
+        
+
+        return Response({"messeger": "update succesfull", "data": str(serializer.data)}, status=status.HTTP_200_OK)
+
+# @api_view(['PATCH'])
+# @permission_classes([permissions.IsAuthenticatedOrReadOnly, IsAdminOrReadOnly])
+# def update_department(request, pk):
+#     try:
+#         department = Department.objects.get(department_id=pk)
+#     except Department.DoesNotExist:
+#         return Response({"error": "Department not found", "status": status.HTTP_404_NOT_FOUND},
+#                         status=status.HTTP_404_NOT_FOUND)
+#     if request.method == 'PATCH':
+#         validation_response = is_valid_type(request)
+#         if validation_response.status_code != status.HTTP_200_OK:
+#             return validation_response
+#         serializer = DepartmentSerializer(department, data=request.data)
+#         validation_response = is_valid_type(request)
+#         if validation_response.status_code != status.HTTP_200_OK:
+#             return validation_response
+#         if serializer.is_valid():
+#             user_id = request.data.get('user_id', None)
+#             if user_id is not None and not UserAccount.objects.filter(user_id=user_id).exists():
+#                 return Response({"error": "UserAccount not found", "status": status.HTTP_400_BAD_REQUEST},
+#                                 status=status.HTTP_400_BAD_REQUEST)
+#             serializer.save()
+#             return Response({"data": str(serializer.data), 'status': status.HTTP_200_OK},
+#                             status=status.HTTP_200_OK)
+#         return Response(serializer.errors,
+#                         status=status.HTTP_400_BAD_REQUEST)
+
