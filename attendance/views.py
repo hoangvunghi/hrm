@@ -11,13 +11,9 @@ from base.views import is_valid_type
 from django.db.models import Q
 
 
-
-
 #đã test, có thể tìm theo tên
-
-
 @api_view(["GET"])
-@permission_classes([IsAdminOrReadOnly])  # Add your custom permission class here if needed
+@permission_classes([IsAdminOrReadOnly])  
 def list_attendance(request):
     page_index = request.GET.get('page_index', 1)
     page_size = request.GET.get('page_size', 20)

@@ -2,7 +2,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework import status, permissions
 from base.models import UserAccount, Leave
-from .serializers import LeaveSerializer
+from .serializers import LeaveSerializer,UserAccountWithLeaveSerializer,LeaveWithUserAccountSerializer
 from rest_framework import permissions
 from base.permissions import IsAdminOrReadOnly, IsOwnerOrReadonly
 from django.http import Http404
@@ -10,27 +10,64 @@ from base.views import is_valid_type
 from django.core.paginator import Paginator,EmptyPage
 
 @api_view(["GET"])
-@permission_classes([IsAdminOrReadOnly])
+@permission_classes([IsAdminOrReadOnly])  
 def list_leave(request):
-    page_number = request.GET.get('page', 1)
-    items_per_page = 20
+    page_index = request.GET.get('page_index', 1)
+    page_size = request.GET.get('page_size', 20)
     total_leave = Leave.objects.count()
-    all_leave = Leave.objects.all()
-    paginator = Paginator(all_leave, items_per_page)
+    order_by = request.GET.get('order_by', '-leave_id')
+    search_query = request.GET.get('q', '')
+
     try:
-        current_page_data = paginator.page(page_number)
+        page_size = int(page_size)
+    except ValueError:
+        return Response({"error": "Invalid value for items_per_page. Must be an integer.",
+                        "status": status.HTTP_400_BAD_REQUEST},
+                        status=status.HTTP_400_BAD_REQUEST)
+
+    allowed_values = [10, 20, 30, 40, 50]
+    if page_size not in allowed_values:
+        return Response({"error": f"Invalid value for items_per_page. Allowed values are: {', '.join(map(str, allowed_values))}.",
+                        "status": status.HTTP_400_BAD_REQUEST},
+                        status=status.HTTP_400_BAD_REQUEST)
+
+    if search_query:
+        try:
+            em_name = str(search_query)
+            users = UserAccount.objects.filter(name__icontains=em_name)
+            leav = Leave.objects.filter(employee__in=users)
+        except ValueError:
+            return Response({"error": "Invalid value for name.",
+                            "status": status.HTTP_400_BAD_REQUEST},
+                            status=status.HTTP_400_BAD_REQUEST)
+    else:
+        leav = Leave.objects.all()
+
+    leav = leav.order_by(order_by)
+    paginator = Paginator(leav, page_size)
+
+    try:
+        current_page_data = paginator.page(page_index)
     except EmptyPage:
         return Response({"error": "Page not found",
-                         "status":status.HTTP_404_NOT_FOUND},
+                        "status": status.HTTP_404_NOT_FOUND},
                         status=status.HTTP_404_NOT_FOUND)
-    serializer = LeaveSerializer(current_page_data.object_list, many=True)
-    serialized_data = serializer.data
+
+    serialized_data = []
+    for leave_instance in current_page_data.object_list:
+        user_account_data = UserAccountWithLeaveSerializer(leave_instance.employee).data
+        leave_data = LeaveWithUserAccountSerializer(leave_instance).data
+
+        combined_data = {**user_account_data, **leave_data}
+        serialized_data.append(combined_data)
+
     return Response({
-        "total_attendances": total_leave,
-        "current_page": page_number,
+        "total_leave": total_leave,
+        "current_page": page_index,
         "data": serialized_data,
-        "status":status.HTTP_200_OK
-    },status=status.HTTP_200_OK)
+        "status": status.HTTP_200_OK
+    }, status=status.HTTP_200_OK)
+
 
 
 @api_view(['DELETE'])
