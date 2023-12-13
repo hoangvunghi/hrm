@@ -1,9 +1,9 @@
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework import status
-from base.models import Attendance,UserAccount
-from .serializers import AttendanceWithUserAccountSerializer, UserAccountWithAttendanceSerializer,AttendanceSerializer
-from base.serializers import UserAccountSerializer
+from base.models import TimeSheet,Employee
+from .serializers import TimeSheetWithUserAccountSerializer, UserAccountWithTimeSheetSerializer,TimeSheetSerializer
+from base.serializers import EmployeeSerializer
 from base.permissions import IsAdminOrReadOnly
 from rest_framework import permissions
 from django.core.paginator import Paginator,EmptyPage
@@ -15,11 +15,11 @@ from django.db.models import Q
 @api_view(["GET"])
 @permission_classes([IsAdminOrReadOnly])  
 def list_attendance(request):
-    page_index = request.GET.get('page_index', 1)
-    page_size = request.GET.get('page_size', 20)
-    total_attendance = Attendance.objects.count()
-    order_by = request.GET.get('order_by', 'attendance_id')
-    search_query = request.GET.get('q', '')
+    page_index = request.GET.get('pageIndex', 1)
+    page_size = request.GET.get('pageSize', 20)
+    total_attendance = TimeSheet.objects.count()
+    order_by = request.GET.get('sort-by', 'TimeID')
+    search_query = request.GET.get('query', '')
 
     try:
         page_size = int(page_size)
@@ -37,17 +37,17 @@ def list_attendance(request):
     if search_query:
         try:
             em_name = str(search_query)
-            users = UserAccount.objects.filter(name__icontains=em_name)
-            attens = Attendance.objects.filter(employee_id__in=users)
+            users = Employee.objects.filter(EmpName__icontains=em_name)
+            time = TimeSheet.objects.filter(EmpID__in=users)
         except ValueError:
             return Response({"error": "Invalid value for name.",
                             "status": status.HTTP_400_BAD_REQUEST},
                             status=status.HTTP_400_BAD_REQUEST)
     else:
-        attens = Attendance.objects.all()
+        time = TimeSheet.objects.all()
 
-    attens = attens.order_by(order_by)
-    paginator = Paginator(attens, page_size)
+    time = time.order_by(order_by)
+    paginator = Paginator(time, page_size)
 
     try:
         current_page_data = paginator.page(page_index)
@@ -58,14 +58,14 @@ def list_attendance(request):
 
     serialized_data = []
     for attendance_instance in current_page_data.object_list:
-        user_account_data = UserAccountWithAttendanceSerializer(attendance_instance.employee_id).data
-        attendance_data = AttendanceWithUserAccountSerializer(attendance_instance).data
+        user_account_data = UserAccountWithTimeSheetSerializer(attendance_instance.EmpID).data
+        attendance_data = TimeSheetWithUserAccountSerializer(attendance_instance).data
 
         combined_data = {**user_account_data, **attendance_data}
         serialized_data.append(combined_data)
 
     return Response({
-        "total_attendances": total_attendance,
+        "total_rows": total_attendance,
         "current_page": page_index,
         "data": serialized_data,
         "status": status.HTTP_200_OK
@@ -82,30 +82,30 @@ def list_attendance(request):
 #ok
 @api_view(['DELETE'])
 @permission_classes([permissions.IsAuthenticatedOrReadOnly, IsAdminOrReadOnly])
-def delete_attendance(request, pk):
+def delete_timesheet(request, pk):
     try:
-        attendance = Attendance.objects.get(attendance_id=pk)
-    except Attendance.DoesNotExist:
-        return Response({"error": "Attendance not found",
+        timesheet = TimeSheet.objects.get(TimeID=pk)
+    except TimeSheet.DoesNotExist:
+        return Response({"error": "Time sheet not found",
                          "status":status.HTTP_404_NOT_FOUND}, status=status.HTTP_404_NOT_FOUND)
 
     if request.method == 'DELETE':
-        if attendance.attendance_id is not None:
-            attendance.delete()
-            return Response({"message": "Attendance deleted successfully",
+        if timesheet.TimeID is not None:
+            timesheet.delete()
+            return Response({"message": "Time sheet deleted successfully",
                              "status":status.HTTP_204_NO_CONTENT}, status=status.HTTP_204_NO_CONTENT)
         else:
-            return Response({"error": "Invalid attendance_id",
+            return Response({"error": "Invalid TimeID",
                              "status":status.HTTP_400_BAD_REQUEST}, status=status.HTTP_400_BAD_REQUEST)
 
 
 # Đã test 
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticatedOrReadOnly])
-def create_attendance(request):
-    serializer = AttendanceSerializer(data=request.data)
+def create_timesheet(request):
+    serializer = TimeSheetSerializer(data=request.data)
 
-    required_fields = ['employee_id']
+    required_fields = ['EmpID']
 
     for field in required_fields:
         if not request.data.get(field):
@@ -113,13 +113,13 @@ def create_attendance(request):
                             status=status.HTTP_400_BAD_REQUEST)
 
     if serializer.is_valid():
-        attendance_id = request.data.get('attendance_id', None)
-        if Attendance.objects.filter(attendance_id=attendance_id).exists():
-            return Response({"error": "Attendance with this attendance_id already exists",
+        timeID = request.data.get('TimeID', None)
+        if TimeSheet.objects.filter(TimeID=timeID).exists():
+            return Response({"error": "Time sheet with this TimeID already exists",
                              },{"status":status.HTTP_400_BAD_REQUEST}, status=status.HTTP_400_BAD_REQUEST)
 
         serializer.save()
-        return Response({"message": "Attendance created successfully","data":str(serializer.data),
+        return Response({"message": "TimeSheet created successfully","data":str(serializer.data),
                          "status":status.HTTP_201_CREATED}, status=status.HTTP_201_CREATED)
     return Response(serializer.errors,
                     status=status.HTTP_400_BAD_REQUEST)

@@ -1,5 +1,5 @@
 from rest_framework.decorators import api_view, permission_classes
-from base.models import Task, Project, UserAccount
+from base.models import Task, Project, Employee
 from base.permissions import IsAdminOrReadOnly, IsOwnerOrReadonly
 from rest_framework.response import Response
 from rest_framework import status, permissions
@@ -32,7 +32,7 @@ def create_task(request):
         proj_id = request.data.get('proj_id', None)
         user_id = request.data.get('user_id', None)
 
-        if Project.objects.filter(proj_id=proj_id).exists() and UserAccount.objects.filter(user_id=user_id).exists():
+        if Project.objects.filter(proj_id=proj_id).exists() and Employee.objects.filter(user_id=user_id).exists():
             return Response({"error": f"Task with id {proj_id}, user {user_id} already exist", 
                              "status":status.HTTP_400_BAD_REQUEST}, 
                             status=status.HTTP_400_BAD_REQUEST)

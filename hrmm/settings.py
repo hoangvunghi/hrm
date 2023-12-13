@@ -78,7 +78,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'base.middleware.CustomAdminMiddleware',
+    # 'base.middleware.CustomAdminMiddleware',
     
 
 ]
@@ -214,7 +214,7 @@ SPECTACULAR_SETTING={
 }
 SIMPLE_JWT = {
 #    'AUTH_HEADER_TYPES': ('JWT',),
-   "USER_ID_FIELD": "user_id", #thay trường id thành user_id ( nghĩa là tất cả các xác thực sẽ dùng user_id thay vì id)
+   "USER_ID_FIELD": "UserID", #thay trường id thành user_id ( nghĩa là tất cả các xác thực sẽ dùng user_id thay vì id)
     "AUTH_HEADER_TYPES": ("Bearer",),
     "ACCESS_TOKEN_LIFETIME": timedelta(days=2),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=30),

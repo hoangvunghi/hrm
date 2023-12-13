@@ -1,7 +1,7 @@
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework import status, permissions
-from base.models import UserAccount, Leave, Leave_Type
+from base.models import Employee, Leave, LeaveType
 from .serializers import LeaveTypeSerializer
 from base.permissions import IsAdminOrReadOnly, IsOwnerOrReadonly
 from django.http import Http404
@@ -13,22 +13,30 @@ from django.core.paginator import Paginator,EmptyPage
 @api_view(["GET"])
 @permission_classes([IsAdminOrReadOnly])
 def list_leave_type(request):
-    page_number = request.GET.get('page', 1)
-    items_per_page = 20
-    total_leave_type = Leave_Type.objects.count()
-    all_leave_type = Leave_Type.objects.all()
-    paginator = Paginator(all_leave_type, items_per_page)
+    page_index = request.GET.get('pageIndex', 1)
+    page_size = request.GET.get('pageSize', 20)
+    total_leave = Leave.objects.count()
+    order_by = request.GET.get('sort_by', '-LeaveID')
+    search_query = request.GET.get('query', '')
+
     try:
-        current_page_data = paginator.page(page_number)
-    except EmptyPage:
-        return Response({"error": "Page not found",
-                         "status":status.HTTP_404_NOT_FOUND},
-                        status=status.HTTP_404_NOT_FOUND)
-    serializer = LeaveTypeSerializer(current_page_data.object_list, many=True)
+        page_size = int(page_size)
+    except ValueError:
+        return Response({"error": "Invalid value for items_per_page. Must be an integer.",
+                        "status": status.HTTP_400_BAD_REQUEST},
+                        status=status.HTTP_400_BAD_REQUEST)
+
+    allowed_values = [10, 20, 30, 40, 50]
+    if page_size not in allowed_values:
+        return Response({"error": f"Invalid value for items_per_page. Allowed values are: {', '.join(map(str, allowed_values))}.",
+                        "status": status.HTTP_400_BAD_REQUEST},
+                        status=status.HTTP_400_BAD_REQUEST)
+    
+    serializer = LeaveTypeSerializer(page_size.object_list, many=True)
     serialized_data = serializer.data
     return Response({
-        "total_leave_type": total_leave_type,
-        "current_page": page_number,
+        "total_rows": total_leave,
+        "current_page": page_index,
         "data": serialized_data,
         "status":status.HTTP_200_OK
     },status=status.HTTP_200_OK)
@@ -38,15 +46,15 @@ def list_leave_type(request):
 @permission_classes([permissions.IsAuthenticatedOrReadOnly, IsAdminOrReadOnly])
 def delete_leavetype(request, pk):
     try:
-        leavetype = Leave_Type.objects.get(leave_type_id=pk)
-    except Leave_Type.DoesNotExist:
+        leavetype = LeaveType.objects.get(LeaveTypeID=pk)
+    except LeaveType.DoesNotExist:
         return Response({"error": "Leavetype not found","status":status.HTTP_404_NOT_FOUND},
                         status=status.HTTP_404_NOT_FOUND)
 
     if request.method == 'DELETE':
-        if leavetype.leave_type_id is not None:
+        if leavetype.LeaveTypeID is not None:
             leavetype.delete()
-            Leave.objects.filter(leave_type_id=pk).delete()
+            Leave.objects.filter(LeaveTypeID=pk).delete()
             return Response({"message": "Leavetype deleted successfully",
                              "status":status.HTTP_204_NO_CONTENT}, status=status.HTTP_204_NO_CONTENT)
         else:
@@ -57,7 +65,7 @@ def delete_leavetype(request, pk):
 @permission_classes([permissions.IsAuthenticatedOrReadOnly, IsAdminOrReadOnly])
 def create_leavetype(request):
     serializer = LeaveTypeSerializer(data=request.data)
-    required_fields = ['leave_type']
+    required_fields = ['LeaveTypeID']
 
     for field in required_fields:
         if not request.data.get(field):
@@ -65,10 +73,10 @@ def create_leavetype(request):
                             status=status.HTTP_400_BAD_REQUEST)
 
     if serializer.is_valid():
-        leave_type_id = request.data.get('leave_type_id', None)
+        leave_type_id = request.data.get('LeaveTypeID', None)
 
-        if Leave_Type.objects.filter(leave_type_id=leave_type_id).exists():
-            return Response({"error": "Leavetype with this leave_type_id already exists",
+        if LeaveType.objects.filter(LeaveTypeID=leave_type_id).exists():
+            return Response({"error": "Leavetype with this LeaveTypeID already exists",
                              "status":status.HTTP_400_BAD_REQUEST}, 
                             status=status.HTTP_400_BAD_REQUEST)
 
@@ -82,8 +90,8 @@ def create_leavetype(request):
 @permission_classes([permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadonly])
 def update_leavetype(request, pk):
     try:
-        leavetype = Leave_Type.objects.get(leave_type_id=pk)
-    except Leave_Type.DoesNotExist:
+        leavetype = LeaveType.objects.get(LeaveTypeID=pk)
+    except LeaveType.DoesNotExist:
         return Response({"error": "Leave Type not found"}, status=status.HTTP_404_NOT_FOUND)
     if request.method == 'PATCH':
         errors= validate_to_update(leavetype, request.data)

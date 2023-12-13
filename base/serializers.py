@@ -1,43 +1,17 @@
 from djoser.serializers import UserCreateSerializer
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
-from .models import UserAccount
+from .models import Employee,UserAccount
 
 User=get_user_model()
 
+class EmployeeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Employee
 
-        
-# class UserRegisterSerializer(serializers.ModelSerializer):
-#     password2 = serializers.CharField(style={'input_type': 'password'}, write_only=True)
-#     number_phone = serializers.CharField(required=True) 
-#     class Meta:
-#         model = User
-#         fields = ['username', 'email', 'password', 'password2','number_phone']
-#         extra_kwargs = {
-#             'password': {'write_only': True}
-#         }
-    
-#     def save(self):
-#         password = self.validated_data['password']
-#         password2 = self.validated_data['password2']
-        
-#         if password != password2:
-#             raise serializers.ValidationError({"Error": "Password Does not match"})
-        
-#         if User.objects.filter(email = self.validated_data['email']).exists():
-#             raise serializers.ValidationError({"Error": "Email already exist"})
-        
-#         account = User(email=self.validated_data['email'], username=self.validated_data['username'])
-#         account.set_password(password)
-#         account.save()
-#         account.number_phone = self.validated_data['number_phone']
-#         account.save()
-        
-#         return account
-    
+        fields='__all__'
 
-
-class UserAccountSerializer(serializers.ModelSerializer):
+class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserAccount
         fields = '__all__'
@@ -45,8 +19,6 @@ class UserAccountSerializer(serializers.ModelSerializer):
         'password': {'write_only': True},
         }
         
-    # def __init__(self, *args, **kwargs):
-    #     super().__init__(*args, **kwargs)
 
     def create(self, validated_data):
         password = validated_data.get('password')
@@ -59,24 +31,15 @@ class UserAccountSerializer(serializers.ModelSerializer):
         validated_data.update(self.initial_data)
         return super().update(instance=instance, validated_data=validated_data)
     
-    # def validate(self, data):
-    #     print("ffff",data)
-    #     request = self.context.get('request')
-    #     print(request)
-    #     current_user_id = request.UserAccount.id if request and request.UserAccount else None
-    #     print(current_user_id)
-    #     if UserAccount.objects.filter(username=data['username']).exclude(id=current_user_id).exists():
-    #          raise serializers.ValidationError("User already exists")
-        
-    #     return data
+
 
 
 class UserRegisterSerializer(serializers.ModelSerializer):
     password2 = serializers.CharField(style={'input_type': 'password'}, write_only=True)
     class Meta:
-        model = User
+        model = UserAccount
         # fields = '__all__'
-        fields = ['name', 'username', 'email', 'password', 'password2'
+        fields = [ 'username', 'email', 'password', 'password2'
                 #   ,'phone_number', 'date_of_birth', 'date_of_hire', 'first_name', 'last_name', 
                 #   'address', 'status'
                   ]

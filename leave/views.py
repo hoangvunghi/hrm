@@ -1,8 +1,8 @@
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework import status, permissions
-from base.models import UserAccount, Leave
-from .serializers import LeaveSerializer,UserAccountWithLeaveSerializer,LeaveWithUserAccountSerializer
+from base.models import Employee, Leave
+from .serializers import LeaveSerializer,EmployeeWithLeaveSerializer,LeaveWithEmployeeSerializer
 from rest_framework import permissions
 from base.permissions import IsAdminOrReadOnly, IsOwnerOrReadonly
 from django.http import Http404
@@ -12,11 +12,11 @@ from django.core.paginator import Paginator,EmptyPage
 @api_view(["GET"])
 @permission_classes([IsAdminOrReadOnly])  
 def list_leave(request):
-    page_index = request.GET.get('page_index', 1)
-    page_size = request.GET.get('page_size', 20)
+    page_index = request.GET.get('pageIndex', 1)
+    page_size = request.GET.get('pageSize', 20)
     total_leave = Leave.objects.count()
-    order_by = request.GET.get('order_by', '-leave_id')
-    search_query = request.GET.get('q', '')
+    order_by = request.GET.get('sort_by', '-LeaveID')
+    search_query = request.GET.get('query', '')
 
     try:
         page_size = int(page_size)
@@ -34,8 +34,8 @@ def list_leave(request):
     if search_query:
         try:
             em_name = str(search_query)
-            users = UserAccount.objects.filter(name__icontains=em_name)
-            leav = Leave.objects.filter(employee__in=users)
+            users = Employee.objects.filter(EmpName__icontains=em_name)
+            leav = Leave.objects.filter(EmpID__in=users)
         except ValueError:
             return Response({"error": "Invalid value for name.",
                             "status": status.HTTP_400_BAD_REQUEST},
@@ -55,14 +55,14 @@ def list_leave(request):
 
     serialized_data = []
     for leave_instance in current_page_data.object_list:
-        user_account_data = UserAccountWithLeaveSerializer(leave_instance.employee).data
-        leave_data = LeaveWithUserAccountSerializer(leave_instance).data
+        user_account_data = EmployeeWithLeaveSerializer(leave_instance.EmpID).data
+        leave_data = LeaveWithEmployeeSerializer(leave_instance).data
 
         combined_data = {**user_account_data, **leave_data}
         serialized_data.append(combined_data)
 
     return Response({
-        "total_leave": total_leave,
+        "total_rows": total_leave,
         "current_page": page_index,
         "data": serialized_data,
         "status": status.HTTP_200_OK
@@ -74,20 +74,20 @@ def list_leave(request):
 @permission_classes([permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadonly])
 def delete_leave(request, pk):
     try:
-        leave = Leave.objects.get(leave_id=pk)
+        leave = Leave.objects.get(LeaveID=pk)
     except Leave.DoesNotExist:
         return Response({"error": "Leave not found",
                          "status": status.HTTP_404_NOT_FOUND}, 
                         status=status.HTTP_404_NOT_FOUND)
 
     if request.method == 'DELETE':
-        if leave.leave_id is not None:
+        if leave.LeaveID is not None:
             leave.delete()
             return Response({"message": "Leave deleted successfully", 
                              "status": status.HTTP_204_NO_CONTENT},
                             status=status.HTTP_204_NO_CONTENT)
         else:
-            return Response({"error": "Invalid leave_id", 
+            return Response({"error": "Invalid LeaveID", 
                              "status": status.HTTP_400_BAD_REQUEST}, 
                             status=status.HTTP_400_BAD_REQUEST)
 
@@ -96,17 +96,17 @@ def delete_leave(request, pk):
 @permission_classes([permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadonly])
 def create_leave(request):
     serializer = LeaveSerializer(data=request.data)
-    required_fields = ["leave_type"]
+    required_fields = ["LeaveTypeID"]
 
     for field in required_fields:
         if not request.data.get(field):
             return Response({"error": f"{field.capitalize()} is required","status":status.HTTP_400_BAD_REQUEST},
                             status=status.HTTP_400_BAD_REQUEST)
     if serializer.is_valid():
-        leave_id = request.data.get('leave_id', None)
+        leave_id = request.data.get('LeaveID', None)
 
-        if Leave.objects.filter(leave_id=leave_id).exists():
-            return Response({"error": "Leave with this leave_id already exists", 
+        if Leave.objects.filter(LeaveID=leave_id).exists():
+            return Response({"error": "Leave with this LeaveID already exists", 
                              "status": status.HTTP_400_BAD_REQUEST}, 
                             status=status.HTTP_400_BAD_REQUEST)
 
@@ -114,7 +114,7 @@ def create_leave(request):
         return Response({"message": "Leave created successfully", 
                          "status": status.HTTP_201_CREATED},
                         status=status.HTTP_201_CREATED)
-    return Response(serializer.errors,{"status":status.HTTP_400_BAD_REQUEST},
+    return Response({"error":str(serializer.errors),"status":status.HTTP_400_BAD_REQUEST},
                     status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -152,7 +152,7 @@ def create_leave(request):
 @permission_classes([permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadonly])
 def update_leave(request, pk):
     try:
-        leave = Leave.objects.get(leave_id=pk)
+        leave = Leave.objects.get(LeaveID=pk)
     except Leave.DoesNotExist:
         return Response({"error": "Leave not found"}, status=status.HTTP_404_NOT_FOUND)
     if request.method == 'PATCH':

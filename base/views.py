@@ -2,10 +2,10 @@ from django.http import Http404, HttpResponse, HttpResponseForbidden,JsonRespons
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework import status, permissions
-from .serializers import UserRegisterSerializer, UserAccountSerializer
+from .serializers import  UserSerializer,EmployeeSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate, login
-from .models import UserAccount, Attendance, Leave
+from .models import Employee, TimeSheet, Leave, Position,Department,UserAccount
 from base.permissions import IsAdminOrReadOnly, IsOwnerOrReadonly
 from django.contrib.auth import get_user_model
 from django.contrib.auth.hashers import check_password
@@ -136,7 +136,7 @@ def change_password(request, pk):
 
         UserAccount = get_user_model()
         try:
-            user_account = UserAccount.objects.get(user_id=pk)
+            user_account = UserAccount.objects.get(EmpID=pk)
         except UserAccount.DoesNotExist:
             return Response({'success': False, 'message': 'User not found.',
                              "status":status.HTTP_404_NOT_FOUND}
@@ -155,12 +155,13 @@ def change_password(request, pk):
                      "status":status.HTTP_400_BAD_REQUEST},
                     status=status.HTTP_400_BAD_REQUEST)
 
+
 @api_view(['DELETE'])
 @permission_classes([permissions.IsAuthenticatedOrReadOnly, IsAdminOrReadOnly])
 def delete_employee(request, pk):
     try:
-        employee = UserAccount.objects.get(user_id=pk)
-    except UserAccount.DoesNotExist:
+        employee = Employee.objects.get(EmpID=pk)
+    except Employee.DoesNotExist:
         return Response({"error": "Employee not found",
                          "status":status.HTTP_404_NOT_FOUND},
                         status=status.HTTP_404_NOT_FOUND)
@@ -168,8 +169,10 @@ def delete_employee(request, pk):
     if request.method == 'DELETE':
         employee.delete()
         delete_data_if_user_quitte(pk)
-        Attendance.objects.filter(employee_id=pk).delete()
-        Leave.objects.filter(employee=pk).delete()
+        TimeSheet.objects.filter(EmpID=pk).delete()
+        Leave.objects.filter(EmpID=pk).delete()
+        Position.objects.filter(EmpID=pk).delete()
+        Department.objects.filter(EmpID=pk).delete()
         return Response({"message": "Employee deleted successfully",
                          "status":status.HTTP_204_NO_CONTENT}, 
                         status=status.HTTP_204_NO_CONTENT)
@@ -179,14 +182,7 @@ def delete_employee(request, pk):
 
 def is_valid_type(request): 
     errors = {}
-    required_fields = ['username', 'password', 'email', 'phone_number', 
-                       'last_name', 'first_name',"position_id","date_of_birth",
-                       "attendance_id","check_in_time","check_out_time","status",
-                       "department_name","manager","leave_type","employee","start_date",
-                       "end_date","reason","position_name","organization_name","tax_id",
-                       "number_of_employees","registration_employees","cost_center",
-                       "phone","tax","email","address_stress",
-                       "city","zip_postalcode","country","note"
+    required_fields = [
                        ]
     for field in required_fields:
         if field in request.data and not request.data[field]:
@@ -222,9 +218,9 @@ def is_valid_type(request):
 @permission_classes([permissions.IsAuthenticatedOrReadOnly, IsAdminOrReadOnly])
 def create_employee(request):
     
-    serializer = UserAccountSerializer(data=request.data)
+    serializer = UserSerializer(data=request.data)
 
-    required_fields = ['username', 'password', 'email',"name"]
+    required_fields = ['username', 'password', 'email']
 
     for field in required_fields:
         if not request.data.get(field):
@@ -236,17 +232,11 @@ def create_employee(request):
     if not re.match(email_regex, new_email):
         return Response({"error": "Invalid email format"},
                         status=status.HTTP_400_BAD_REQUEST)
-
-    phone_number = request.data.get('phone_number', '')
-    phone_regex = r'^[0-9]+$'
-    if phone_number and (not re.match(phone_regex, phone_number) or len(phone_number) != 10):
-        return Response({"error": "Invalid phone number format","status":status.HTTP_400_BAD_REQUEST},
-                        status=status.HTTP_400_BAD_REQUEST)
     if serializer.is_valid():
-        user_id = request.data.get('user_id', None)
+        user_id = request.data.get('EmpID', None)
 
-        if UserAccount.objects.filter(user_id=user_id).exists():
-            return Response({"error": "User with this user_id already exists",
+        if UserAccount.objects.filter(EmpID=user_id).exists():
+            return Response({"error": "User with this EmpID already exists",
                              "status":status.HTTP_400_BAD_REQUEST}, 
                             status=status.HTTP_400_BAD_REQUEST)
         serializer.save()
@@ -260,13 +250,13 @@ def create_employee(request):
 def validate_to_update(obj, data):
     # obj da ton tai
     errors={}
-    dict=['username', 'user_id',"department_id","leave_id","leave_type_id","position_id"]
+    dict=['username', 'EmpID',"DepID","LeaveID","LeaveTypeID","PosID"]
     for key in data:
         value= data[key]
         if key in dict:
             errors[key]= f"{key} not allowed to change"
         
-        if key=='email' and UserAccount.objects.filter(email= value).exclude(user_id= obj.user_id).exists():
+        if key=='email' and Employee.objects.filter(Email= value).exclude(user_id= obj.EmpID).exists():
             errors[key]= f"email ({value}) is really exists"        
     return errors 
 
@@ -281,15 +271,15 @@ def obj_update(obj, validated_data):
 @permission_classes([permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadonly])
 def update_employee(request, pk):
     try:
-        employee = UserAccount.objects.get(user_id=pk)
-    except UserAccount.DoesNotExist:
+        employee = Employee.objects.get(EmpID=pk)
+    except Employee.DoesNotExist:
         return Response({"error": "Employee not found"}, status=status.HTTP_404_NOT_FOUND)
     if request.method == 'PATCH':
         errors= validate_to_update(employee, request.data)
         if len(errors):
             return Response({"error": errors}, status=status.HTTP_400_BAD_REQUEST)
         obj_update(employee, request.data)
-        serializer=UserAccountSerializer(employee)
+        serializer=EmployeeSerializer(employee)
         new_email = request.data.get('email', '')
         email_regex = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
         if not re.match(email_regex, new_email):
@@ -313,14 +303,10 @@ def update_employee(request, pk):
         # return Response(error, status=status.HTTP_400_BAD_REQUEST)
 @api_view(["POST",])
 def find_employee(request):
-    q=request.GET.get('q') if request.GET.get('q')!=None else ''
-    employees=UserAccount.objects.filter(
-        Q(username__icontains=q) |
-        Q(name__icontains=q)|
-        Q(first_name__icontains=q)|
-        Q(last_name__icontains=q)|
-        Q(position__position_name__icontains=q)| 
-        Q(last_name__icontains=q)
+    q=request.GET.get('query') if request.GET.get('query')!=None else ''
+    employees=Employee.objects.filter(
+        Q(user__username__icontains=q) |
+        Q(EmpName__icontains=q)
     )
     # serializer = UserAccountSerializer(employee, many=True)
     # return Response(serializer.data)
@@ -332,16 +318,16 @@ def find_employee(request):
     
 
 #đã test
-# @extend_schema(responses=UserAccountSerializer)
+@extend_schema(responses=EmployeeSerializer())
 @api_view(["GET"])
 @permission_classes([IsAdminOrReadOnly])
 def list_employee(request):
-    page_index = request.GET.get('page_index', 1)
-    page_size = request.GET.get('page_size', 20)
-    order_by = request.GET.get('order_by', 'user_id')  
-    search_query = request.GET.get('q', '')
+    page_index = request.GET.get('pageIndex', 1)
+    page_size = request.GET.get('pageSize', 20)
+    order_by = request.GET.get('sort_by', 'EmpID')  
+    search_query = request.GET.get('query', '')
 
-    allowed_order_fields = ['user_id', 'name', 'date_of_hire', '-user_id', '-date_of_hire']
+    allowed_order_fields = ['EmpID', 'EmpName', 'HireDate', '-EmpID', '-HireDate']
 
     if order_by not in allowed_order_fields:
         return Response({"error": f"Invalid order_by value. Allowed values are: {', '.join(allowed_order_fields)}",
@@ -361,14 +347,11 @@ def list_employee(request):
                          "status": status.HTTP_400_BAD_REQUEST},
                         status=status.HTTP_400_BAD_REQUEST)
 
-    total_employees = UserAccount.objects.count()
+    total_employees = Employee.objects.count()
 
-    employees = UserAccount.objects.filter(
-        Q(username__icontains=search_query) |
-        Q(name__icontains=search_query)|
-        Q(first_name__icontains=search_query)|
-        Q(last_name__icontains=search_query)|
-        Q(last_name__icontains=search_query)
+    employees = Employee.objects.filter(
+        Q(useraccount__username__icontains=search_query) |
+        Q(EmpName__icontains=search_query)
     ).order_by(order_by)
 
     paginator = Paginator(employees, page_size)
@@ -380,10 +363,10 @@ def list_employee(request):
                          "status": status.HTTP_404_NOT_FOUND},
                         status=status.HTTP_404_NOT_FOUND)
 
-    serializer = UserAccountSerializer(current_page_data.object_list, many=True)
+    serializer = EmployeeSerializer(current_page_data.object_list, many=True)
     serialized_data = serializer.data
     return Response({
-        "total_employees": total_employees,
+        "total_rows": total_employees,
         "current_page": page_index,
         "data": serialized_data,
         "status": status.HTTP_200_OK,
@@ -391,20 +374,20 @@ def list_employee(request):
 
 
 
-def delete_data_if_user_quitte(user_id):
+def delete_data_if_user_quitte(EmpID):
     try:
-        user = UserAccount.objects.get(user_id=user_id)
+        user = Employee.objects.get(EmpID=EmpID)
 
         if user.status == 'quitte':
-            Attendance.objects.filter(employee_id=user).delete()
-            Leave.objects.filter(employee=user).delete()
+            TimeSheet.objects.filter(EmpID=user).delete()
+            Leave.objects.filter(EmpID=user).delete()
             return Response(f"Deleted data for user {user.email} because the status is 'quitte'"
                             ,status=status.HTTP_200_OK)
         else:
             return Response(f"No data deletion. User {user.email} has a status other than 'quitte'",
                             status=status.HTTP_204_NO_CONTENT)
-    except UserAccount.DoesNotExist:
-        return Response(f"User with ID {user_id} does not exist.",
+    except Employee.DoesNotExist:
+        return Response(f"User with ID {EmpID} does not exist.",
                         status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
         return Response(f"Error: {str(e)}",

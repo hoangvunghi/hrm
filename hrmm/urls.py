@@ -1,7 +1,7 @@
 # from django.views.generic import TemplateView
 from django.contrib import admin
 from django.urls import path,include,re_path
-from base.admin import hr_admin_site
+# from base.admin import hr_admin_site
 from rest_framework_swagger.views import get_swagger_view
 from drf_spectacular.views import SpectacularAPIView,SpectacularSwaggerView
 # schema_view = get_swagger_view(title='Pastebin API')
@@ -17,10 +17,10 @@ urlpatterns = [
     path('',include('base.urls')),
     path('department/',include('department.urls')),
     path('leave/',include('leave.urls')),
-    path('leave_type/',include('leave_type.urls')),
-    path('attendance/',include('attendance.urls')),
+    path('leavetype/',include('leave_type.urls')),
+    path('timesheet/',include('attendance.urls')),
     path('position/',include('position.urls')),
-    path('hr_admin/', hr_admin_site.urls),  
+    # path('hr_admin/', hr_admin_site.urls),  
     # url("api/", schema_view)
     path("organization/",include('organization.urls')),
     path("api/schema/",SpectacularAPIView.as_view(),name="schema"),

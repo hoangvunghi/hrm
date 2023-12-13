@@ -1,22 +1,22 @@
 from rest_framework import serializers
-from base.models import UserAccount, Attendance
+from base.models import Employee, TimeSheet
 
-class AttendanceSerializer(serializers.ModelSerializer):
+class TimeSheetSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Attendance
+        model = TimeSheet
         fields = "__all__" 
         
 
-class UserAccountWithAttendanceSerializer(serializers.ModelSerializer):
+class UserAccountWithTimeSheetSerializer(serializers.ModelSerializer):
     class Meta:
-        model = UserAccount
-        fields = ('user_id', 'email', 'name', 'is_active', 'is_staff', 'username', 'first_name', 'last_name', 'phone_number', 'address', 'date_of_birth', 'date_of_hire', 'status')
-
-class AttendanceWithUserAccountSerializer(serializers.ModelSerializer):
-    employee_id = UserAccountWithAttendanceSerializer(source='employee', read_only=True)
+        model = Employee
+        fields = "__all__"
+        
+class TimeSheetWithUserAccountSerializer(serializers.ModelSerializer):
+    employee_id = UserAccountWithTimeSheetSerializer(source='employee', read_only=True)
 
     class Meta:
-        model = Attendance
+        model = TimeSheet
         fields = '__all__'
 
         

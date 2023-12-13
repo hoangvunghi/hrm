@@ -1,8 +1,8 @@
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework import status, permissions
-from base.models import UserAccount, Department
-from .serializers import DepartmentSerializer,UserAccountWithDepartmentSerializer,DepartmentWithUserAccountSerializer
+from base.models import Employee, Department
+from .serializers import DepartmentSerializer,EmployeeWithDepartmentSerializer,DepartmentWithEmployeeSerializer
 from base.permissions import IsAdminOrReadOnly, IsOwnerOrReadonly
 from django.http import Http404
 from base.views import is_valid_type,validate_to_update,obj_update
@@ -13,11 +13,11 @@ from django.core.paginator import Paginator,EmptyPage
 @api_view(["GET"])
 @permission_classes([IsAdminOrReadOnly])  
 def list_department(request):
-    page_index = request.GET.get('page_index', 1)
-    page_size = request.GET.get('page_size', 20)
+    page_index = request.GET.get('pageIndex', 1)
+    page_size = request.GET.get('pageSize', 20)
     total_department = Department.objects.count()
-    order_by = request.GET.get('order_by', 'department_id')
-    search_query = request.GET.get('q', '')
+    order_by = request.GET.get('sort_by', 'DepId')
+    search_query = request.GET.get('query', '')
 
     try:
         page_size = int(page_size)
@@ -35,8 +35,8 @@ def list_department(request):
     if search_query:
         try:
             em_name = str(search_query)
-            users = UserAccount.objects.filter(name__icontains=em_name)
-            depart = Department.objects.filter(manager__in=users)
+            users = Employee.objects.filter(EmpName__icontains=em_name)
+            depart = Department.objects.filter(EmpID__in=users)
         except ValueError:
             return Response({"error": "Invalid value for name.",
                             "status": status.HTTP_400_BAD_REQUEST},
@@ -56,14 +56,14 @@ def list_department(request):
 
     serialized_data = []
     for department_instance in current_page_data.object_list:
-        user_account_data = UserAccountWithDepartmentSerializer(department_instance.manager).data
-        department_data = DepartmentWithUserAccountSerializer(department_instance).data
+        user_account_data = EmployeeWithDepartmentSerializer(department_instance.EmpID).data
+        department_data = DepartmentWithEmployeeSerializer(department_instance).data
 
         combined_data = {**user_account_data, **department_data}
         serialized_data.append(combined_data)
 
     return Response({
-        "total_attendances": total_department,
+        "total_rows": total_department,
         "current_page": page_index,
         "data": serialized_data,
         "status": status.HTTP_200_OK
@@ -75,13 +75,13 @@ def list_department(request):
 @permission_classes([permissions.IsAuthenticatedOrReadOnly, IsAdminOrReadOnly])
 def delete_department(request, pk):
     try:
-        department = Department.objects.get(department_id=pk)
+        department = Department.objects.get(DepId=pk)
     except Department.DoesNotExist:
         return Response({"error": "Department not found","status":status.HTTP_404_NOT_FOUND}, 
                         status=status.HTTP_404_NOT_FOUND)
 
     if request.method == 'DELETE':
-        if department.department_id is not None:
+        if department.DepID is not None:
             department.delete()
             return Response({"message": "Department deleted successfully","status":status.HTTP_204_NO_CONTENT}, 
                             status=status.HTTP_204_NO_CONTENT)
@@ -95,7 +95,7 @@ def delete_department(request, pk):
 def create_department(request):
     serializer = DepartmentSerializer(data=request.data)
     # is_valid_type(serializer.data)
-    required_fields = ['department_name',"manager"]
+    required_fields = ['DepId',"EmpID"]
 
     for field in required_fields:
         if not request.data.get(field):
@@ -103,9 +103,9 @@ def create_department(request):
                             status=status.HTTP_400_BAD_REQUEST)
             
     if serializer.is_valid():
-        department_id = request.data.get('department_id', None)
-        department_name = request.data.get('department_name', None)
-        user_id = request.data.get('user_id', None)
+        department_id = request.data.get('DepId', None)
+        department_name = request.data.get('DepName', None)
+        user_id = request.data.get('EmpID', None)
         existing_department = Department.objects.filter(department_id=department_id, department_name=department_name).first()
         if existing_department:
             if existing_department.user_set.filter(user_id=user_id).exists():
@@ -126,7 +126,7 @@ def create_department(request):
 @permission_classes([permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadonly])
 def update_department(request, pk):
     try:
-        department = Department.objects.get(department_id=pk)
+        department = Department.objects.get(DepID=pk)
     except Department.DoesNotExist:
         return Response({"error": "Department not found"}, status=status.HTTP_404_NOT_FOUND)
     if request.method == 'PATCH':

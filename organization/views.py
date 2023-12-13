@@ -26,7 +26,7 @@ def view_organization(request):
 
 @api_view(['PATCH'])
 @permission_classes([permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadonly])
-def update_organization(request, pk):
+def update_organization(request):
     try:
         org = Organization.load()
     except ObjectDoesNotExist:

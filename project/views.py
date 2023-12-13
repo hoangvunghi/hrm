@@ -1,5 +1,5 @@
 from rest_framework.decorators import api_view, permission_classes
-from base.models import Project, UserAccount
+from base.models import Project, Employee
 from base.permissions import IsAdminOrReadOnly, IsOwnerOrReadonly
 from rest_framework.response import Response
 from rest_framework import status, permissions
