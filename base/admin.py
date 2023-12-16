@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.admin import AdminSite
-from .models import TimeSheet,Position,Employee,Department,Leave,LeaveType,UserAccount, Project, Task
+from .models import TimeSheet,Job,Employee,Department,Leave,LeaveType,UserAccount, Project, Task,SalaryHistory
 # from django.contrib.auth.models import User
 from organization.models import Organization
 
@@ -18,10 +18,12 @@ from organization.models import Organization
 # admin.site.register(Employee,UserAccount)
 admin.site.register(LeaveType)
 admin.site.register(Leave)
-admin.site.register(Employee)
+admin.site.register(SalaryHistory)
 admin.site.register(UserAccount)
-admin.site.register(Position)
+admin.site.register(Job)
 admin.site.register(Department)
+admin.site.register(TimeSheet)
+
 
 # admin.site.register(Organization)
 
@@ -38,10 +40,10 @@ admin.site.register(Department)
 #     pass
 
 
-# class UserAccountAdmin(admin.ModelAdmin):
-#     list_display = ['email', 'username', 'is_active', 'is_staff',"Status","EmpID"]
+class UserAccountAdmin(admin.ModelAdmin):
+    list_display = ["EmpID"]
 
-# admin.site.register(Employee, UserAccountAdmin)
+admin.site.register(Employee, UserAccountAdmin)
 # class DepartmentAdmin(admin.ModelAdmin):
 #     list_display=["department_id",'department_name']
 # admin.site.register(Department,DepartmentAdmin)

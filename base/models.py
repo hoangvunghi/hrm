@@ -4,17 +4,18 @@ from datetime import datetime
 
 
 class Department(models.Model):
-    DepID = models.AutoField(primary_key=True)
+    DepID = models.IntegerField(primary_key=True)
     DepName = models.CharField(max_length=255)
 
 
-class Position(models.Model):
-    PosID = models.AutoField(primary_key=True)
-    PosName = models.CharField(max_length=255)
-
+class Job(models.Model):
+    JobID = models.IntegerField(primary_key=True)
+    JobName = models.CharField(max_length=255)
+    JobChangeHour=models.FloatField()
+    DepID=models.ForeignKey(Department,on_delete=models.CASCADE)
 
 class Employee(models.Model):
-    EmpID = models.AutoField(primary_key=True)
+    EmpID = models.IntegerField(primary_key=True)
     EmpName = models.CharField(max_length=255)
     Phone = models.CharField(max_length=15)
     HireDate = models.DateTimeField()
@@ -23,9 +24,8 @@ class Employee(models.Model):
     PhotoPath = models.CharField(max_length=255)
     Email = models.EmailField()
     Salary = models.FloatField()
-    role = models.BooleanField()
-    DepID = models.ForeignKey(Department, on_delete=models.CASCADE)
-    PosID = models.ForeignKey(Position, on_delete=models.CASCADE)
+    DepID = models.ForeignKey(Department, on_delete=models.SET_NULL,null=True)
+    JobID = models.ForeignKey(Job, on_delete=models.SET_NULL,null=True)
     EmpStatus = models.BooleanField()
 
 
@@ -51,7 +51,7 @@ class UserAccountManager(BaseUserManager):
 class UserAccount(PermissionsMixin, AbstractBaseUser):
     UserID = models.CharField(primary_key=True, max_length=255)
     email = models.EmailField(unique=True)
-    EmpID = models.ForeignKey(Employee, on_delete=models.SET_NULL,blank=True,null=True)
+    EmpID = models.ForeignKey(Employee, on_delete=models.CASCADE)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)   
     # password=models.CharField(max_length=255)
@@ -61,13 +61,21 @@ class UserAccount(PermissionsMixin, AbstractBaseUser):
     REQUIRED_FIELDS = ["email","UserID"] 
 
 
-class LeaveType(models.Model):
-    LeaveTypeID = models.AutoField(primary_key=True)
-    LeaveTypeName = models.CharField(max_length=255)
+class SalaryHistory(models.Model):
+    EmpID=models.ForeignKey(Employee,on_delete=models.CASCADE)
+    SalFrom=models.DateField(primary_key=True)
+    SalEnd=models.DateField()
+    SalAmount=models.FloatField()
+    class Meta:
+        unique_together=(('EmpID',"SalFrom"),)
 
+class LeaveType(models.Model):
+    LeaveTypeID = models.IntegerField(primary_key=True)
+    LeaveTypeName = models.CharField(max_length=255)
+    Subsidize=models.FloatField()
 
 class Leave(models.Model):
-    LeaveID = models.AutoField(primary_key=True)
+    LeaveID = models.IntegerField(primary_key=True)
     EmpID = models.ForeignKey(Employee, on_delete=models.CASCADE)
     LeaveStartDate = models.DateTimeField()
     LeaveEndDate = models.DateTimeField()
@@ -77,7 +85,7 @@ class Leave(models.Model):
 
 
 class TimeSheet(models.Model):
-    TimeID = models.AutoField(primary_key=True)
+    TimeID = models.IntegerField(primary_key=True)
     TimeIn = models.DateTimeField()
     TimeOut = models.DateTimeField()
     EmpID = models.ForeignKey(Employee, on_delete=models.CASCADE)

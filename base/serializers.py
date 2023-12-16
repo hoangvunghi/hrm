@@ -1,6 +1,7 @@
 from djoser.serializers import UserCreateSerializer
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from .models import Employee,UserAccount
 
 User=get_user_model()
@@ -31,13 +32,21 @@ class UserSerializer(serializers.ModelSerializer):
         validated_data.update(self.initial_data)
         return super().update(instance=instance, validated_data=validated_data)
     
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    @classmethod
+    def get_token(cls, user):
+        token = super().get_token(user)
 
+        # Add custom claims to the token, if needed
+        token['UserID'] = user.UserID
+
+        return token
 
 
 class UserRegisterSerializer(serializers.ModelSerializer):
     password2 = serializers.CharField(style={'input_type': 'password'}, write_only=True)
     class Meta:
-        model = UserAccount
+        model = User
         # fields = '__all__'
         fields = [ 'username', 'email', 'password', 'password2'
                 #   ,'phone_number', 'date_of_birth', 'date_of_hire', 'first_name', 'last_name', 

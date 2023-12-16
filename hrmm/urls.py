@@ -18,11 +18,13 @@ urlpatterns = [
     path('department/',include('department.urls')),
     path('leave/',include('leave.urls')),
     path('leavetype/',include('leave_type.urls')),
-    path('timesheet/',include('attendance.urls')),
-    path('position/',include('position.urls')),
+    path('timesheet/',include('timesheet.urls')),
+    path('job/',include('job.urls')),
     # path('hr_admin/', hr_admin_site.urls),  
     # url("api/", schema_view)
     path("organization/",include('organization.urls')),
+    path("salary/",include('salary.urls')),
+
     path("api/schema/",SpectacularAPIView.as_view(),name="schema"),
     path("docs/",SpectacularSwaggerView.as_view(url_name="schema")),
     path('project/', include('project.urls')),

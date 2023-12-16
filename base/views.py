@@ -5,7 +5,7 @@ from rest_framework import status, permissions
 from .serializers import  UserSerializer,EmployeeSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate, login
-from .models import Employee, TimeSheet, Leave, Position,Department,UserAccount
+from .models import Employee, TimeSheet, Leave, Job,Department,UserAccount
 from base.permissions import IsAdminOrReadOnly, IsOwnerOrReadonly
 from django.contrib.auth import get_user_model
 from django.contrib.auth.hashers import check_password
@@ -171,7 +171,7 @@ def delete_employee(request, pk):
         delete_data_if_user_quitte(pk)
         TimeSheet.objects.filter(EmpID=pk).delete()
         Leave.objects.filter(EmpID=pk).delete()
-        Position.objects.filter(EmpID=pk).delete()
+        Job.objects.filter(EmpID=pk).delete()
         Department.objects.filter(EmpID=pk).delete()
         return Response({"message": "Employee deleted successfully",
                          "status":status.HTTP_204_NO_CONTENT}, 
@@ -199,6 +199,7 @@ def is_valid_type(request):
         if not re.match(email_regex, new_email):
             return Response({"error": "Invalid email format","status":status.HTTP_400_BAD_REQUEST}, 
                             status=status.HTTP_400_BAD_REQUEST)
+    
     if 'phone_number'  in request.data and not request.data['phone_number']:
         errors['phone_number'] = 'Phone number is required'
     if 'phone_number'  in request.data and  request.data['phone_number'] !="":
@@ -208,7 +209,7 @@ def is_valid_type(request):
             errors['phone_number'] = 'Invalid phone number format.'
 
     if errors:
-        return Response(errors
+        return Response({'error':errors}
                         ,status=status.HTTP_400_BAD_REQUEST)
     return Response({"message": "Data is valid","status":status.HTTP_200_OK}
                     , status=status.HTTP_200_OK)
@@ -250,20 +251,26 @@ def create_employee(request):
 def validate_to_update(obj, data):
     # obj da ton tai
     errors={}
-    dict=['username', 'EmpID',"DepID","LeaveID","LeaveTypeID","PosID"]
+    dict=['username', 'EmpID',"DepID","LeaveID","LeaveTypeID","JobID"]
     for key in data:
         value= data[key]
         if key in dict:
             errors[key]= f"{key} not allowed to change"
         
-        if key=='email' and Employee.objects.filter(Email= value).exclude(user_id= obj.EmpID).exists():
+        if key=='email' and Employee.objects.filter(Email= value).exclude(EmpID= obj.EmpID).exists():
             errors[key]= f"email ({value}) is really exists"        
+        if  key=='SalAmount':
+            try:
+                sal_amount = float(value)
+            except ValueError:
+                errors[key]= f"amount must be float"        
+
     return errors 
 
 def obj_update(obj, validated_data):
     for key in validated_data:
         setattr(obj, key, validated_data[key])
-        print(getattr(obj, key))
+        # print(getattr(obj, key))
     obj.save()
 
 
@@ -285,7 +292,7 @@ def update_employee(request, pk):
         if not re.match(email_regex, new_email):
             return Response({"error": "Invalid email format"},
                             status=status.HTTP_400_BAD_REQUEST)
-        phone_number = request.data.get('phone_number', '')
+        phone_number = request.data.get('phone', '')
         phone_regex = r'^[0-9]+$'
         if phone_number and (not re.match(phone_regex, phone_number) or len(phone_number) != 10):
             return Response({"error": "Invalid phone number format","status":status.HTTP_400_BAD_REQUEST},
@@ -305,7 +312,7 @@ def update_employee(request, pk):
 def find_employee(request):
     q=request.GET.get('query') if request.GET.get('query')!=None else ''
     employees=Employee.objects.filter(
-        Q(user__username__icontains=q) |
+        Q(useraccount__username__icontains=q) |
         Q(EmpName__icontains=q)
     )
     # serializer = UserAccountSerializer(employee, many=True)
