@@ -1,7 +1,9 @@
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework import status, permissions
-from base.models import Employee, Leave, LeaveType
+from base.models import Employee
+from leave_type.models import LeaveType
+from leave.models import Leave
 from .serializers import LeaveTypeSerializer
 from base.permissions import IsAdminOrReadOnly, IsOwnerOrReadonly
 from django.http import Http404

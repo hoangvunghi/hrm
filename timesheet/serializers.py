@@ -1,5 +1,6 @@
 from rest_framework import serializers
-from base.models import Employee, TimeSheet
+from base.models import Employee
+from .models import TimeSheet
 
 class TimeSheetSerializer(serializers.ModelSerializer):
     class Meta:

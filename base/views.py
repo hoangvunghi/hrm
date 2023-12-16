@@ -5,7 +5,11 @@ from rest_framework import status, permissions
 from .serializers import  UserSerializer,EmployeeSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate, login
-from .models import Employee, TimeSheet, Leave, Job,Department,UserAccount
+from .models import Employee,UserAccount
+from job.models import Job
+from department.models import Department
+from timesheet.models import TimeSheet
+from leave.models import Leave
 from base.permissions import IsAdminOrReadOnly, IsOwnerOrReadonly
 from django.contrib.auth import get_user_model
 from django.contrib.auth.hashers import check_password

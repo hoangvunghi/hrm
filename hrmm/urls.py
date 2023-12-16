@@ -22,7 +22,7 @@ urlpatterns = [
     path('job/',include('job.urls')),
     # path('hr_admin/', hr_admin_site.urls),  
     # url("api/", schema_view)
-    path("organization/",include('organization.urls')),
+    # path("organization/",include('organization.urls')),
     path("salary/",include('salary.urls')),
 
     path("api/schema/",SpectacularAPIView.as_view(),name="schema"),

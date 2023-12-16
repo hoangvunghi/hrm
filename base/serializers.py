@@ -4,7 +4,7 @@ from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from .models import Employee,UserAccount
 
-User=get_user_model()
+UserAccount=get_user_model()
 
 class EmployeeSerializer(serializers.ModelSerializer):
     class Meta:
@@ -46,7 +46,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 class UserRegisterSerializer(serializers.ModelSerializer):
     password2 = serializers.CharField(style={'input_type': 'password'}, write_only=True)
     class Meta:
-        model = User
+        model = UserAccount
         # fields = '__all__'
         fields = [ 'username', 'email', 'password', 'password2'
                 #   ,'phone_number', 'date_of_birth', 'date_of_hire', 'first_name', 'last_name', 
@@ -65,7 +65,7 @@ class UserRegisterSerializer(serializers.ModelSerializer):
         if password != password2:
             error['password']= "Password Does not match"
         
-        if User.objects.filter(email = data['email']).exists():
+        if UserAccount.objects.filter(email = data['email']).exists():
             error["email"] = "Email already exist"
 
         return error
@@ -80,5 +80,5 @@ class UserRegisterSerializer(serializers.ModelSerializer):
     def create(self, validate_data):
         validate_data.pop('password2')
         print(validate_data)
-        return User.objects.create_user(**validate_data)
+        return UserAccount.objects.create_user(**validate_data)
 

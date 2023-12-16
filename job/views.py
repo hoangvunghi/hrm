@@ -1,7 +1,8 @@
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework import status, permissions
-from base.models import Employee, Job
+from base.models import Employee
+from .models import Job
 from .serializers import JobSerializer,EmployeeWithJobSerializer,JobWithEmployeeSerializer
 from base.permissions import IsAdminOrReadOnly, IsOwnerOrReadonly
 from django.http import Http404

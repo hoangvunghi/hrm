@@ -1,4 +1,4 @@
-from base.models import LeaveType
+from .models import LeaveType
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 

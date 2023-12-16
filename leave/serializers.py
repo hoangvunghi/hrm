@@ -1,7 +1,8 @@
-from base.models import Leave, Employee
+from base.models import  Employee
 from djoser.serializers import UserCreateSerializer
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
+from .models import Leave
 
 
 class LeaveSerializer(serializers.ModelSerializer):

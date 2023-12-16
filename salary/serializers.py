@@ -1,6 +1,6 @@
 from rest_framework import serializers
-from base.models import Employee, SalaryHistory
-
+from base.models import Employee
+from .models import SalaryHistory
 class SalarySerializer(serializers.ModelSerializer):
     class Meta:
         model = SalaryHistory

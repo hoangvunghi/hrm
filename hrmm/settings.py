@@ -51,7 +51,7 @@ INSTALLED_APPS = [
     'department.apps.DepartmentConfig',
     'leave.apps.LeaveConfig',
     'leave_type.apps.LeaveTypeConfig',
-    'organization.apps.OrganizationConfig',
+    # 'organization.apps.OrganizationConfig',
     'project.apps.ProjectConfig',
     'task.apps.TaskConfig',
     'rest_framework',
