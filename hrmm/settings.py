@@ -39,6 +39,7 @@ ALLOWED_HOSTS = [
 # Application definition
 
 INSTALLED_APPS = [
+    # "daphne",
     "admin_interface",
     "colorfield",
     'django.contrib.admin',
@@ -80,12 +81,10 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     # 'base.middleware.CustomAdminMiddleware',
-    
-
 ]
 
 ROOT_URLCONF = 'hrmm.urls'
-
+ASGI_APPLICATION = "hrmm.asgi.application"
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',

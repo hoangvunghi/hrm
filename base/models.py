@@ -7,18 +7,17 @@ from job.models import Job
 
 
 class Employee(models.Model):
-    EmpID = models.IntegerField(primary_key=True)
+    EmpID = models.AutoField(primary_key=True)
     EmpName = models.CharField(max_length=255)
-    Phone = models.CharField(max_length=15)
-    HireDate = models.DateTimeField()
-    BirthDate = models.DateTimeField()
-    Address = models.CharField(max_length=255)
-    PhotoPath = models.CharField(max_length=255)
-    Email = models.EmailField()
-    # Salary = models.FloatField()
-    DepID = models.ForeignKey(Department, on_delete=models.SET_NULL,null=True)
-    JobID = models.ForeignKey(Job, on_delete=models.SET_NULL,null=True)
-    EmpStatus = models.BooleanField()
+    Phone = models.CharField(max_length=15,null=True)
+    HireDate = models.DateTimeField(null=True)
+    BirthDate = models.DateTimeField(null=True)
+    Address = models.CharField(max_length=255,null=True)
+    PhotoPath = models.CharField(max_length=255,null=True)
+    Email = models.EmailField(null=True)
+    DepID = models.ForeignKey(Department, on_delete=models.DO_NOTHING)
+    JobID = models.ForeignKey(Job, on_delete=models.DO_NOTHING)
+    EmpStatus = models.BooleanField(default=True)
 
 
 class UserAccountManager(BaseUserManager):
@@ -30,13 +29,11 @@ class UserAccountManager(BaseUserManager):
         user.set_password(password)
         user.save()
         return user
-
     # def create_superuser(self,email=None, password=None, **extra_fields):
     #     # extra_fields.setdefault('is_staff', True)
     #     # extra_fields.setdefault('is_superuser', True)
     #     return self.create_user( password=password, **extra_fields)
-    def create_superuser(self, UserID, password, email=None):
-
+    def create_superuser(self, UserID, password, **extra_fields):
         employee=Employee(
             EmpID = 0,
             EmpName = 'Admin',
@@ -45,16 +42,14 @@ class UserAccountManager(BaseUserManager):
             Address = 'a',
             PhotoPath = 'a',
             Email = 'admin',
-            EmpStatus = True
-        )
-        employee.save()
-        
+            EmpStatus = True)
         user = self.create_user(
             UserID=UserID,
             password=password,
             UserStatus=True,
-            EmpID= employee
+            EmpID=employee
         )
+        user.is_staff = True
         user.is_superuser = True
         user.save(using=self._db)
         return user
@@ -63,12 +58,13 @@ class UserAccount(AbstractBaseUser, PermissionsMixin):
     UserID = models.CharField(primary_key=True, max_length=255)
     EmpID = models.ForeignKey(Employee, on_delete=models.CASCADE)
     objects = UserAccountManager()
-    UserStatus = models.BooleanField()
+    UserStatus = models.BooleanField(default=True)
+    is_staff=models.BooleanField(default=False)
     # email=models.EmailField()
     USERNAME_FIELD = 'UserID'
     last_login = None
     # REQUIRED_FIELDS
-
+    email=None
 
 
 class Project(models.Model): 
@@ -94,5 +90,3 @@ class Task(models.Model):
     proj_id = models.ForeignKey(Project, on_delete=models.CASCADE, null=True)
     user_id = models.ForeignKey(Employee, on_delete=models.SET_NULL, null=True)
     description = models.TextField()
-
-

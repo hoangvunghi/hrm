@@ -3,7 +3,7 @@ from base.models import Employee
 from leave_type.models import LeaveType
 # Create your models here.
 class Leave(models.Model):
-    LeaveID = models.IntegerField(primary_key=True)
+    LeaveID = models.AutoField(primary_key=True)
     EmpID = models.ForeignKey(Employee, on_delete=models.CASCADE)
     LeaveStartDate = models.DateTimeField()
     LeaveEndDate = models.DateTimeField()

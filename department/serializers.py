@@ -9,14 +9,13 @@ class DepartmentSerializer(serializers.ModelSerializer):
         model = Department
         fields = '__all__'
         
-
 class EmployeeWithDepartmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Employee
         fields = '__all__'
+        
 class DepartmentWithEmployeeSerializer(serializers.ModelSerializer):
     employee_id = EmployeeWithDepartmentSerializer(source='employee', read_only=True)
-
     class Meta:
         model = Department
         fields = '__all__'

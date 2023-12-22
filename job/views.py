@@ -3,69 +3,59 @@ from rest_framework.response import Response
 from rest_framework import status, permissions
 from base.models import Employee
 from .models import Job
-from .serializers import JobSerializer,EmployeeWithJobSerializer,JobWithEmployeeSerializer
+from department.models import Department
+from .serializers import JobSerializer,EmployeeWithJobSerializer,JobWithEmployeeSerializer,TotalEmployeeWithJobSerializer
 from base.permissions import IsAdminOrReadOnly, IsOwnerOrReadonly
 from django.http import Http404
-from base.views import is_valid_type,obj_update,validate_to_update
+from base.views import is_valid_type,obj_update
 from django.core.paginator import Paginator,EmptyPage
 
 
 
 @api_view(["GET"])
-@permission_classes([IsAdminOrReadOnly])  
+@permission_classes([IsAdminOrReadOnly])
 def list_job(request):
     page_index = request.GET.get('pageIndex', 1)
     page_size = request.GET.get('pageSize', 20)
-    total_job = Job.objects.count()
     order_by = request.GET.get('sort_by', 'JobID')
     search_query = request.GET.get('query', '')
-
+    asc = request.GET.get('asc', 'true').lower() == 'true'
+    order_by = f"{'' if asc else '-'}{order_by}"
     try:
         page_size = int(page_size)
     except ValueError:
         return Response({"error": "Invalid value for items_per_page. Must be an integer.",
-                        "status": status.HTTP_400_BAD_REQUEST},
+                         "status": status.HTTP_400_BAD_REQUEST},
                         status=status.HTTP_400_BAD_REQUEST)
-
     allowed_values = [10, 20, 30, 40, 50]
     if page_size not in allowed_values:
         return Response({"error": f"Invalid value for items_per_page. Allowed values are: {', '.join(map(str, allowed_values))}.",
-                        "status": status.HTTP_400_BAD_REQUEST},
+                         "status": status.HTTP_400_BAD_REQUEST},
                         status=status.HTTP_400_BAD_REQUEST)
-
     if search_query:
         try:
             em_name = str(search_query)
-            users = Employee.objects.filter(EmpName__icontains=em_name)
-            posi = Job.objects.filter(JobID__in=users)
+            jobs = Job.objects.filter(Employee__EmpName__icontains=em_name)
         except ValueError:
             return Response({"error": "Invalid value for name.",
-                            "status": status.HTTP_400_BAD_REQUEST},
+                             "status": status.HTTP_400_BAD_REQUEST},
                             status=status.HTTP_400_BAD_REQUEST)
     else:
-        posi = Job.objects.all()
-
-    posi = posi.order_by(order_by)
-    paginator = Paginator(posi, page_size)
-
+        jobs = Job.objects.all()
+    jobs = jobs.order_by(order_by)
+    paginator = Paginator(jobs, page_size)
     try:
         current_page_data = paginator.page(page_index)
     except EmptyPage:
         return Response({"error": "Page not found",
-                        "status": status.HTTP_404_NOT_FOUND},
+                         "status": status.HTTP_404_NOT_FOUND},
                         status=status.HTTP_404_NOT_FOUND)
-
     serialized_data = []
-    for position_instance in current_page_data.object_list:
-        user_account_data = EmployeeWithJobSerializer(position_instance.JobID).data
-        position_data = JobWithEmployeeSerializer(position_instance).data
-
-        combined_data = {**user_account_data, **position_data}
-        serialized_data.append(combined_data)
-
+    for job_instance in current_page_data.object_list:
+        serialized_data.append(EmployeeWithJobSerializer({'job': job_instance}).data)
     return Response({
-        "total_rows": total_job,
-        "current_page": page_index,
+        "total_rows": jobs.count(),
+        "current_page": int(page_index),
         "data": serialized_data,
         "status": status.HTTP_200_OK
     }, status=status.HTTP_200_OK)
@@ -80,7 +70,6 @@ def delete_job(request, pk):
     except Job.DoesNotExist:
         return Response({"error": "Position not found","status":status.HTTP_404_NOT_FOUND},
                         status=status.HTTP_404_NOT_FOUND)
-
     if request.method == 'DELETE':
         if position.JobID is not None:
             position.delete()
@@ -91,28 +80,67 @@ def delete_job(request, pk):
                              }, status=status.HTTP_400_BAD_REQUEST)
 
 
+
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticatedOrReadOnly, IsAdminOrReadOnly])
 def create_job(request):
     serializer = JobSerializer(data=request.data)
-    required_fields = ['JobName','JobChangeHour']
-
+    required_fields = ['JobName','JobChangeHour',"JobID","DepID"]
     for field in required_fields:
         if not request.data.get(field):
-            return Response({"error": f"{field.capitalize()} is required","status":status.HTTP_400_BAD_REQUEST},
+            return Response({"error": f"{field} is required","status":status.HTTP_400_BAD_REQUEST},
                             status=status.HTTP_400_BAD_REQUEST)
+    # JobID = request.data.get('JobID', None)
+    DepID = request.data.get('DepID', None)
+    JobChangeHour = request.data.get('JobChangeHour')
+    if not DepID.isdigit():
+        return Response({"error": "DepID must be a valid integer", "status": status.HTTP_400_BAD_REQUEST},
+                        status=status.HTTP_400_BAD_REQUEST)
+    # if not JobID.isdigit():
+    #     return Response({"error": "JobID must be a valid integer", "status": status.HTTP_400_BAD_REQUEST},
+    #                     status=status.HTTP_400_BAD_REQUEST)
+    try:
+        department = Department.objects.get(DepID=DepID)
+    except Department.DoesNotExist:
+        return Response({"error": f"Department with DepID {DepID} does not exist.",
+                         "status": status.HTTP_400_BAD_REQUEST},
+                        status=status.HTTP_400_BAD_REQUEST)
+    try:
+        float(JobChangeHour)
+    except ValueError:
+        return Response({"error": "JobChangeHour must be a valid number or string",
+                             "status": status.HTTP_400_BAD_REQUEST},
+                            status=status.HTTP_400_BAD_REQUEST)
+    # position_id = request.data.get('JobID', None)
+    # if Job.objects.filter(JobID=position_id).exists():
+    #     return Response({"error": "Job with this JobID already exists",
+    #                          "status":status.HTTP_400_BAD_REQUEST}, status=status.HTTP_400_BAD_REQUEST)
     if serializer.is_valid():
-        position_id = request.data.get('JobID', None)
-
-        if Job.objects.filter(JobID=position_id).exists():
-            return Response({"error": "Job with this JobID already exists",
-                             "status":status.HTTP_400_BAD_REQUEST}, status=status.HTTP_400_BAD_REQUEST)
-
         serializer.save()
-        return Response({"message": "Job created successfully",
+        return Response({"message": "Job created successfully","data":serializer.data,
                          "status":status.HTTP_201_CREATED}, status=status.HTTP_201_CREATED)
-    return Response({"error":str(serializer.errors),"status":status.HTTP_400_BAD_REQUEST},
+    return Response({"error":serializer.errors,"status":status.HTTP_400_BAD_REQUEST},
                     status=status.HTTP_400_BAD_REQUEST)
+
+
+
+def validate_to_update(obj, data):
+    # obj da ton tai
+    errors={}
+    dict=['JobID']
+    for key in data:
+        value= data[key]
+        if key in dict:
+            errors[key]= f"{key} not allowed to change"        
+        # if key=='email' and Employee.objects.filter(Email= value).exclude(EmpID= obj.EmpID).exists():
+        #     errors[key]= f"email ({value}) is really exists"        
+        if  key=='JobChangeHour':
+            try:
+                sal_amount = float(value)
+            except ValueError:
+                errors[key]= f"JobChangeHour must be float"        
+    return errors 
+
 
 
 @api_view(['PATCH'])
@@ -122,10 +150,18 @@ def update_job(request, pk):
         possition = Job.objects.get(JobID=pk)
     except Job.DoesNotExist:
         return Response({"error": "Job not found"}, status=status.HTTP_404_NOT_FOUND)
+    DepID = request.data.get('DepID', None)
+    if DepID!=None:
+        try:
+            department = Department.objects.get(DepID=DepID)
+        except Department.DoesNotExist:
+            return Response({"error": f"Department with DepID {DepID} does not exist.",
+                            "status": status.HTTP_400_BAD_REQUEST},
+                            status=status.HTTP_400_BAD_REQUEST)
     if request.method == 'PATCH':
         errors= validate_to_update(possition, request.data)
         if len(errors):
-            return Response({"error": errors}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": errors,"status":status.HTTP_400_BAD_REQUEST}, status=status.HTTP_400_BAD_REQUEST)
         obj_update(possition, request.data)
         serializer=JobSerializer(possition)
-        return Response({"messeger": "update succesfull", "data": str(serializer.data)}, status=status.HTTP_200_OK)
+        return Response({"messeger": "update succesfull", "data": serializer.data,"status":status.HTTP_200_OK}, status=status.HTTP_200_OK)

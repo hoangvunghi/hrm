@@ -14,14 +14,13 @@ from django.db.models import Q
 
 #đã test, có thể tìm theo tên
 @api_view(["GET"])
-@permission_classes([IsAdminOrReadOnly])  
+@permission_classes([IsAdminOrReadOnly])
 def list_timesheet(request):
-    page_index = request.GET.get('pageIndex', 1)
-    page_size = request.GET.get('pageSize', 20)
+    page_index = request.GET.get('pageIndex', 1) 
+    page_size = request.GET.get('pageSize', 20) 
     total_attendance = TimeSheet.objects.count()
     order_by = request.GET.get('sort-by', 'TimeID')
-    search_query = request.GET.get('query', '')
-
+    asc = request.GET.get('asc', 'true').lower() == 'true'  
     try:
         page_size = int(page_size)
     except ValueError:
@@ -34,8 +33,7 @@ def list_timesheet(request):
         return Response({"error": f"Invalid value for items_per_page. Allowed values are: {', '.join(map(str, allowed_values))}.",
                         "status": status.HTTP_400_BAD_REQUEST},
                         status=status.HTTP_400_BAD_REQUEST)
-
-    if search_query:
+    if search_query := request.GET.get('query', ''):
         try:
             em_name = str(search_query)
             users = Employee.objects.filter(EmpName__icontains=em_name)
@@ -46,41 +44,30 @@ def list_timesheet(request):
                             status=status.HTTP_400_BAD_REQUEST)
     else:
         time = TimeSheet.objects.all()
-
+    order_by = f"{'' if asc else '-'}{order_by}"
     time = time.order_by(order_by)
     paginator = Paginator(time, page_size)
-
     try:
         current_page_data = paginator.page(page_index)
     except EmptyPage:
         return Response({"error": "Page not found",
                         "status": status.HTTP_404_NOT_FOUND},
                         status=status.HTTP_404_NOT_FOUND)
-
     serialized_data = []
     for attendance_instance in current_page_data.object_list:
         user_account_data = UserAccountWithTimeSheetSerializer(attendance_instance.EmpID).data
         attendance_data = TimeSheetWithUserAccountSerializer(attendance_instance).data
-
         combined_data = {**user_account_data, **attendance_data}
         serialized_data.append(combined_data)
-
     return Response({
         "total_rows": total_attendance,
-        "current_page": page_index,
+        "current_page": int(page_index),
         "data": serialized_data,
         "status": status.HTTP_200_OK
     }, status=status.HTTP_200_OK)
 
 
 
-
-
-
-    
-    
-    
-#ok
 @api_view(['DELETE'])
 @permission_classes([permissions.IsAuthenticatedOrReadOnly, IsAdminOrReadOnly])
 def delete_timesheet(request, pk):
@@ -100,27 +87,38 @@ def delete_timesheet(request, pk):
                              "status":status.HTTP_400_BAD_REQUEST}, status=status.HTTP_400_BAD_REQUEST)
 
 
+
 # Đã test 
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticatedOrReadOnly])
 def create_timesheet(request):
+    request.data['EmpID'] = request.user.EmpID.EmpID
+
     serializer = TimeSheetSerializer(data=request.data)
-
-    required_fields = ['EmpID']
-
+    required_fields = ['EmpID',"TimeIn","TimeOut"]
+    emp_id = request.data.get('EmpID', None)
+    # TimeID=request.data.get("TimeID",None)
+    if emp_id != None:
+        try:
+            employee = Employee.objects.get(EmpID=emp_id)
+        except Employee.DoesNotExist:
+            return Response({"error": f"Employee with EmpID does not exist.",
+                            "status": status.HTTP_400_BAD_REQUEST},
+                            status=status.HTTP_400_BAD_REQUEST)
+    # if not TimeID.isdigit():
+    #     return Response({"error": "TimeID must be a valid integer", "status": status.HTTP_400_BAD_REQUEST},
+    #                     status=status.HTTP_400_BAD_REQUEST)
     for field in required_fields:
         if not request.data.get(field):
             return Response({"error": f"{field.capitalize()} is required","status":status.HTTP_400_BAD_REQUEST},
                             status=status.HTTP_400_BAD_REQUEST)
-
+    # if TimeSheet.objects.filter(TimeID=TimeID).exists():
+    #     return Response({"error": "Time sheet with this TimeID already exists",
+    #                          "status":status.HTTP_400_BAD_REQUEST}, status=status.HTTP_400_BAD_REQUEST)
     if serializer.is_valid():
-        timeID = request.data.get('TimeID', None)
-        if TimeSheet.objects.filter(TimeID=timeID).exists():
-            return Response({"error": "Time sheet with this TimeID already exists",
-                             },{"status":status.HTTP_400_BAD_REQUEST}, status=status.HTTP_400_BAD_REQUEST)
-
+        serializer.validated_data["EmpID"] = request.user.EmpID
         serializer.save()
-        return Response({"message": "TimeSheet created successfully","data":str(serializer.data),
+        return Response({"message": "TimeSheet created successfully","data":serializer.data,
                          "status":status.HTTP_201_CREATED}, status=status.HTTP_201_CREATED)
     return Response(serializer.errors,
                     status=status.HTTP_400_BAD_REQUEST)
