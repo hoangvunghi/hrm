@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework import status, permissions
 from base.models import Employee
 from .models import Department
-from .serializers import DepartmentSerializer,EmployeeWithDepartmentSerializer,DepartmentWithEmployeeSerializer
+from .serializers import DepartmentSerializer
 from base.permissions import IsAdminOrReadOnly, IsOwnerOrReadonly
 from django.http import Http404
 from base.views import is_valid_type
@@ -32,17 +32,8 @@ def list_department(request):
         return Response({"error": f"Invalid value for items_per_page. Allowed values are: {', '.join(map(str, allowed_values))}.",
                          "status": status.HTTP_400_BAD_REQUEST},
                         status=status.HTTP_400_BAD_REQUEST)
-    if search_query:
-        try:
-            em_name = str(search_query)
-            users = Employee.objects.filter(EmpName__icontains=em_name)
-            depart = Department.objects.filter(EmpID__in=users)
-        except ValueError:
-            return Response({"error": "Invalid value for name.",
-                             "status": status.HTTP_400_BAD_REQUEST},
-                            status=status.HTTP_400_BAD_REQUEST)
-    else:
-        depart = Department.objects.all()
+
+    depart = Department.objects.all()
     depart = depart.order_by(order_by)
     paginator = Paginator(depart, page_size)
     try:
@@ -51,12 +42,9 @@ def list_department(request):
         return Response({"error": "Page not found",
                          "status": status.HTTP_404_NOT_FOUND},
                         status=status.HTTP_404_NOT_FOUND)
-    serialized_data = []
-    for department_instance in current_page_data.object_list:
-        user_account_data = EmployeeWithDepartmentSerializer(department_instance.EmpID).data
-        department_data = DepartmentWithEmployeeSerializer(department_instance).data
-        combined_data = {**user_account_data, **department_data}
-        serialized_data.append(combined_data)
+    serializer = DepartmentSerializer(current_page_data.object_list, many=True)
+    serialized_data = serializer.data
+
     return Response({
         "total_rows": depart.count(),
         "current_page": int(page_index),

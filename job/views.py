@@ -52,7 +52,17 @@ def list_job(request):
                         status=status.HTTP_404_NOT_FOUND)
     serialized_data = []
     for job_instance in current_page_data.object_list:
-        serialized_data.append(EmployeeWithJobSerializer({'job': job_instance}).data)
+        serializer = JobSerializer(job_instance)
+        data = serializer.data
+        
+        dep_id = data["DepID"]
+        try:
+            dep_name = Department.objects.get(DepID=dep_id).DepName
+            data["DepName"] = dep_name
+        except Department.DoesNotExist:
+            data["DepName"] = None
+
+        serialized_data.append(data)    
     return Response({
         "total_rows": jobs.count(),
         "current_page": int(page_index),
