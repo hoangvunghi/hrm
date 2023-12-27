@@ -20,16 +20,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
 from django.core.paginator import Paginator,EmptyPage
 from drf_spectacular.utils import extend_schema
-# from django.shortcuts import redirect
 
-# def check_user(request):
-#     if request.user.is_superuser:
-#         return redirect('admin:index')  
-
-#     if request.user.is_staff and not request.user.is_superuser:
-#         return redirect('hr_admin:index')
-
-#     return redirect('user')
  
 
 @api_view(["GET",])
@@ -82,6 +73,11 @@ def user_login_view(request):
                                 status=status.HTTP_400_BAD_REQUEST)
             user = authenticate(request, username=username, password=password)
             if user is not None:
+                if not user.UserStatus:
+                    return Response({"error": "Account has been locked.",
+                                     "status": status.HTTP_401_UNAUTHORIZED}, 
+                                    status=status.HTTP_401_UNAUTHORIZED)
+
                 try:
                     refresh = RefreshToken.for_user(user)
                     access_token = str(refresh.access_token)
@@ -98,7 +94,7 @@ def user_login_view(request):
                 
                 data = {
                     "response": "Login successful",
-                    "data":employee_data,
+                    "data": employee_data,
                     'token': {
                         'refresh': str(refresh),
                         'access': access_token,
@@ -111,7 +107,7 @@ def user_login_view(request):
                                  "status": status.HTTP_401_UNAUTHORIZED}, 
                                 status=status.HTTP_401_UNAUTHORIZED)
         except Exception as e:
-            return Response({'error': e,
+            return Response({'error': str(e),
                              "status": status.HTTP_400_BAD_REQUEST}, 
                             status=status.HTTP_400_BAD_REQUEST)
 
@@ -304,7 +300,6 @@ def obj_update(obj, validated_data):
                 setattr(obj, key, job)
             except Job.DoesNotExist:
                 raise ValueError(f"Invalid JobID provided: {value}")
-
         else:
             setattr(obj, key, value)
 
@@ -335,17 +330,12 @@ def update_employee(request, pk):
         serializer=EmployeeSerializer(employee)
         return Response({"messeger": "update succesfull", "data": serializer.data,"status":status.HTTP_200_OK},
                         status=status.HTTP_200_OK)    
-    # serializer = UserAccountSerializer(employee, data=request.data, partial=True)
-        # if serializer.is_valid():
-        #     serializer.save()
-        #     return Response(serializer.data, status=status.HTTP_200_OK)
-        # error= serializer.errors
-        # error['messesge']= "ssssss"
-        # return Response(error, status=status.HTTP_400_BAD_REQUEST)
+
         
         
         
-@api_view(["POST",])
+@api_view(["GET",])
+@permission_classes([IsAdminOrReadOnly])
 def find_employee(request):
     q = request.GET.get('query') if request.GET.get('query') != None else ''
     employees = Employee.objects.filter(
@@ -395,7 +385,16 @@ def list_employee(request):
     for employee_data in current_page_data.object_list:
         serializer = EmployeeSerializer(employee_data)
         data = serializer.data
-        
+        emp_id = data["EmpID"]
+        try:
+            user = UserAccount.objects.get(EmpID=emp_id)
+            username = UserAccount.objects.get(EmpID=emp_id).UserID
+            pass_word=user.get_password()
+            data["UserID"] = username
+            data["password"]=pass_word
+        except UserAccount.DoesNotExist:
+            data["UserID"] = None
+            data["password"]=None
         job_id = data["JobID"]
         try:
             job_name = Job.objects.get(JobID=job_id).JobName
@@ -406,6 +405,7 @@ def list_employee(request):
         dep_id = data["DepID"]
         try:
             dep_name = Department.objects.get(DepID=dep_id).DepName
+
             data["DepName"] = dep_name
         except Department.DoesNotExist:
             data["DepName"] = None
@@ -438,3 +438,63 @@ def delete_data_if_user_quitte(EmpID):
         return Response(f"Error: {str(e)}",
                         status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
+    
+@api_view(["GET"])
+@permission_classes([IsAdminOrReadOnly])
+def list_user_password(request):
+    page_index = request.GET.get('pageIndex', 1)
+    page_size = request.GET.get('pageSize', 20)
+    order_by = request.GET.get('sort_by', 'UserID')  
+    search_query = request.GET.get('query', '')
+    asc = request.GET.get('asc', 'true').lower() == 'true'  
+    order_by = f"{'' if asc else '-'}{order_by}"
+    account = UserAccount.objects.filter(
+        Q(UserID__icontains=search_query)
+    ).order_by(order_by)
+    try:
+        page_size = int(page_size)
+    except ValueError:
+        return Response({"error": "Invalid value for items_per_page. Must be an integer.",
+                         "status": status.HTTP_400_BAD_REQUEST},
+                        status=status.HTTP_400_BAD_REQUEST)
+    allowed_values = [10, 20, 30, 40, 50]
+    if page_size not in allowed_values:
+        return Response({"error": f"Invalid value for items_per_page. Allowed values are: {', '.join(map(str, allowed_values))}.",
+                         "status": status.HTTP_400_BAD_REQUEST},
+                        status=status.HTTP_400_BAD_REQUEST)
+    total_userid = account.count()
+    paginator = Paginator(account, page_size)
+    try:
+        current_page_data = paginator.page(page_index)
+    except EmptyPage:
+        return Response({"error": "Page not found",
+                        "status": status.HTTP_404_NOT_FOUND},
+                        status=status.HTTP_404_NOT_FOUND)
+
+    serialized_data = []
+
+    for account_data in current_page_data.object_list:
+        data = {
+            "UserID": account_data.UserID,
+            "password": account_data.password,
+            "UserStatus":account_data.UserStatus,
+        }
+        serializer = UserSerializer(account_data)
+
+        emp_id = serializer.data["EmpID"]
+        try:
+            user = UserAccount.objects.get(EmpID=emp_id)
+            empName = Employee.objects.get(EmpID=emp_id).EmpName
+
+            data["EmpName"] = empName
+        except UserAccount.DoesNotExist:
+            data["UserID"] = None
+            data["password"] = None
+
+        serialized_data.append(data)
+    return Response({
+        "total_rows": total_userid,
+        "current_page": int(page_index),
+        "data": serialized_data,
+        "status": status.HTTP_200_OK,
+    }, status=status.HTTP_200_OK)

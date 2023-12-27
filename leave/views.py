@@ -164,7 +164,7 @@ def update_leave(request, pk):
     except Leave.DoesNotExist:
         return Response({"error": "Leave not found"}, status=status.HTTP_404_NOT_FOUND)
     leavetypeid = request.data.get('LeaveTypeID', None)
-    leaveid = request.data.get('LeaveID', None)
+    # leaveid = request.data.get('LeaveID', None)
     if leavetypeid !=None:
         try:
             leavetypeid = LeaveType.objects.get(LeaveTypeID=leavetypeid)

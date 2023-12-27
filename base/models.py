@@ -56,15 +56,15 @@ class UserAccountManager(BaseUserManager):
 
 class UserAccount(AbstractBaseUser, PermissionsMixin):
     UserID = models.CharField(primary_key=True, max_length=255)
-    EmpID = models.ForeignKey(Employee, on_delete=models.CASCADE)
+    EmpID = models.ForeignKey(Employee, on_delete=models.SET_NULL,null=True)
     objects = UserAccountManager()
     UserStatus = models.BooleanField(default=True)
     is_staff=models.BooleanField(default=False)
-    # email=models.EmailField()
     USERNAME_FIELD = 'UserID'
     last_login = None
-    # REQUIRED_FIELDS
     email=None
+    def get_password(self):
+        return self.password
 
 
 class Project(models.Model): 
