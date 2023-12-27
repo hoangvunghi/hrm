@@ -26,13 +26,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-jdpf2v1-4x!m&v)f!x%2z0u22)^si=i4h7t21vivl^^2%3#w0%'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = [
     '192.168.1.18',
     '127.0.0.1',
     '192.168.1.17',
     # ".vercel.app",
+    'hrmbe.onrender.com',
+    'www.hrmbe.onrender.com',
 ]
 
 
@@ -104,6 +106,7 @@ TEMPLATES = [
 WSGI_APPLICATION = 'hrmm.wsgi.application'
 CORS_ALLOWED_ORIGINS=[
     "http://localhost:5173",
+    "https://hrmbe.onrender.com",
 ]
 
 
