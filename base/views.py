@@ -113,7 +113,7 @@ def user_login_view(request):
                             status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['POST'])
-@permission_classes([permissions.IsAuthenticated, IsAdminOrReadOnly])
+@permission_classes([permissions.IsAuthenticatedOrReadOnly, IsAdminOrReadOnly])
 def reset_employee_password(request, pk):
     try:
         user = UserAccount.objects.get(EmpID=pk)
@@ -122,7 +122,12 @@ def reset_employee_password(request, pk):
                          "status": status.HTTP_404_NOT_FOUND},
                         status=status.HTTP_404_NOT_FOUND)
 
-    new_password = "123"  
+    new_password = request.data.get('new_password')
+
+    if not new_password:
+        return Response({"error": "New password is required",
+                         "status": status.HTTP_400_BAD_REQUEST},
+                        status=status.HTTP_400_BAD_REQUEST)
 
     hashed_password = make_password(new_password)
     user.password = hashed_password
