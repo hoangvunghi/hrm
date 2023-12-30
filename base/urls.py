@@ -17,4 +17,6 @@ urlpatterns=[
     path('employee/list-username', views.list_user_password, name="list_user_password"),
     path("",views.a),
     path("employee/list-employee",views.list_employee,name="list-employee"), 
+    path("employee/change-password/<str:pk>", views.change_password,name="change-password"),
+    path("employee/delete-account/<str/pk>",views.delete_account, name="delete-account"),
 ]

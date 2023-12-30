@@ -103,24 +103,24 @@ def delete_department(request, pk):
 @permission_classes([permissions.IsAuthenticatedOrReadOnly, IsAdminOrReadOnly])
 def create_department(request):
     serializer = DepartmentSerializer(data=request.data)
-    required_fields = [ 'EmpID', 'DepName']
+    required_fields = [  'DepName']
     for field in required_fields:
         if not request.data.get(field):
             return Response({"error": f"{field.capitalize()} is required",
                              "status": status.HTTP_400_BAD_REQUEST},
                             status=status.HTTP_400_BAD_REQUEST)
-    EmpID = request.data.get('EmpID', None)
+    # EmpID = request.data.get('EmpID', None)
     # if not EmpID.isdigit():
     #     return Response({"error": "EmpID must be a valid integer", "status": status.HTTP_400_BAD_REQUEST},
     #                     status=status.HTTP_400_BAD_REQUEST)
-    try:
-        employee = Employee.objects.get(EmpID=EmpID)
-    except Employee.DoesNotExist:
-        return Response({"error": f"Employee with EmpID {EmpID} does not exist.",
-                         "status": status.HTTP_400_BAD_REQUEST},
-                        status=status.HTTP_400_BAD_REQUEST)
+    # try:
+    #     employee = Employee.objects.get(EmpID=EmpID)
+    # except Employee.DoesNotExist:
+    #     return Response({"error": f"Employee with EmpID {EmpID} does not exist.",
+    #                      "status": status.HTTP_400_BAD_REQUEST},
+    #                     status=status.HTTP_400_BAD_REQUEST)
     # department_id = request.data.get('DepID', None)
-    department_name = request.data.get('DepName', None)
+    # department_name = request.data.get('DepName', None)
     # if Department.objects.filter(DepID=department_id).exists():
     #     return Response({"error": "Department with this DepID already exists",
     #                          "status":status.HTTP_400_BAD_REQUEST}, status=status.HTTP_400_BAD_REQUEST)

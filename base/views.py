@@ -143,6 +143,21 @@ def change_password(request, pk):
                     status=status.HTTP_400_BAD_REQUEST)
 
 
+@api_view(['DELETE'])
+@permission_classes([permissions.IsAuthenticatedOrReadOnly, IsAdminOrReadOnly])
+def delete_account(request, pk):
+    try:
+        account = UserAccount.objects.get(EmpID=pk)
+    except UserAccount.DoesNotExist:
+        return Response({"error": "User Account not found",
+                         "status":status.HTTP_404_NOT_FOUND},
+                        status=status.HTTP_404_NOT_FOUND)
+    if request.method == 'DELETE':
+        account.delete()
+        return Response({"message": "Employee deleted successfully",
+                         "status":status.HTTP_204_NO_CONTENT}, 
+                        status=status.HTTP_204_NO_CONTENT)
+
 
 @api_view(['DELETE'])
 @permission_classes([permissions.IsAuthenticatedOrReadOnly, IsAdminOrReadOnly])
@@ -426,6 +441,7 @@ def delete_data_if_user_quitte(EmpID):
         if user.status == 'quitte':
             TimeSheet.objects.filter(EmpID=user).delete()
             Leave.objects.filter(EmpID=user).delete()
+            UserAccount.objects.filter(EmpID=user).delete()
             return Response(f"Deleted data for user {user.email} because the status is 'quitte'"
                             ,status=status.HTTP_200_OK)
         else:
