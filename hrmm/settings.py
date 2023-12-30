@@ -102,7 +102,7 @@ TEMPLATES = [
         },
     },
 ]
-
+CSRF_COOKIE_SECURE = True  # Nếu sử dụng HTTPS
 WSGI_APPLICATION = 'hrmm.wsgi.application'
 CORS_ALLOWED_ORIGINS=[
     "http://localhost:5173",
