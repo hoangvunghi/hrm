@@ -20,6 +20,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
 from django.core.paginator import Paginator,EmptyPage
 from drf_spectacular.utils import extend_schema
+from django.contrib.auth.hashers import make_password
 
  
 
@@ -111,7 +112,30 @@ def user_login_view(request):
                              "status": status.HTTP_400_BAD_REQUEST}, 
                             status=status.HTTP_400_BAD_REQUEST)
 
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated, IsAdminOrReadOnly])
+def reset_employee_password(request, pk):
+    try:
+        user = UserAccount.objects.get(EmpID=pk)
+    except UserAccount.DoesNotExist:
+        return Response({"error": "User Account not found",
+                         "status": status.HTTP_404_NOT_FOUND},
+                        status=status.HTTP_404_NOT_FOUND)
 
+    new_password = "123"  
+
+    hashed_password = make_password(new_password)
+    user.password = hashed_password
+    user.save()
+
+    refresh = RefreshToken.for_user(user)
+    # refresh.blacklist()
+
+    serializer = UserSerializer(user)
+    return Response({"message": "Password reset successfully",
+                     "data": serializer.data,
+                     "status": status.HTTP_200_OK},
+                    status=status.HTTP_200_OK)
 
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadonly])
