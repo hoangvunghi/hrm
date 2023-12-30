@@ -39,7 +39,7 @@ ALLOWED_HOSTS = [
 
 
 # Application definition
-
+    
 INSTALLED_APPS = [
     # "daphne",
     "admin_interface",
@@ -84,6 +84,8 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     # 'base.middleware.CustomAdminMiddleware',
 ]
+CSRF_TRUSTED_ORIGINS=[    'hrmbe.onrender.com',
+    'www.hrmbe.onrender.com',] 
 
 ROOT_URLCONF = 'hrmm.urls'
 ASGI_APPLICATION = "hrmm.asgi.application"
