@@ -348,7 +348,38 @@ def obj_update(obj, validated_data):
             setattr(obj, key, value)
 
     obj.save()
+def validate_to_update_account(obj, data):
+    errors={}
+    dict=['UserID', 'EmpID',]
+    if 'UserStatus' in data:
+        user_status = data['UserStatus']
 
+        user_status_lower = str(user_status)
+
+        if user_status_lower not in ['True', 'False', '0', '1']:
+            errors['UserStatus'] = "UserStatus must be a valid boolean value (True/False or 0/1)."
+    for key in data:
+        value= data[key]
+        if key in dict:
+            errors[key]= f"{key} not allowed to change"        
+    return errors 
+
+@api_view(['PATCH'])
+@permission_classes([permissions.IsAuthenticatedOrReadOnly, IsAdminOrReadOnly])
+def update_account(request, pk):
+    try:
+        employee = UserAccount.objects.get(EmpID=pk)
+    except UserAccount.DoesNotExist:
+        return Response({"error": "Account not found"}, status=status.HTTP_404_NOT_FOUND)
+    
+    if request.method == 'PATCH':
+        errors= validate_to_update_account(employee, request.data)
+        if len(errors):
+            return Response({"error": errors,"status":status.HTTP_400_BAD_REQUEST}, status=status.HTTP_400_BAD_REQUEST)
+        obj_update(employee, request.data)
+        serializer=UserSerializer(employee)
+        return Response({"messeger": "update succesfull", "data": serializer.data,"status":status.HTTP_200_OK},
+                        status=status.HTTP_200_OK)    
 
 
 @api_view(['PATCH'])
@@ -543,3 +574,4 @@ def list_user_password(request):
         "data": serialized_data,
         "status": status.HTTP_200_OK,
     }, status=status.HTTP_200_OK)
+
