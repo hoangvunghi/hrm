@@ -111,8 +111,8 @@ CORS_ALLOWED_ORIGINS=[
     "http://localhost:5173",
     "https://hrmbe.onrender.com",
 ]
-
-
+SECURITY_PASSWORD_SALT="abcd"
+BACKEND_URL = "http://127.0.0.1:8000"
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
@@ -170,30 +170,30 @@ AUTH_USER_MODEL='base.UserAccount'
 EMAIL_BACKEND='django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST='smtp.gmail.com'
 EMAIL_PORT=587
-EMAIL_HOST_USER='hoangvunghi@gmail.com'
-EMAIL_HOST_PASSWORD='nghi'
-EMAIL_USER_TLS=True
+EMAIL_HOST_USER='test12202023test@gmail.com'
+EMAIL_HOST_PASSWORD='munmybgwcgsxvifa'
+EMAIL_USE_TLS=True
 
 
-#gửi email xác thực bằng djoser
-DJOSER={
-    'LOGIN_FIELD':'email',
-    'USER_CREATE_PASSOWRD_RETYPE':True,
-    'USERNAME_CHANGED_EMAIL_CONFIRMATION':True,
-    'PASSWORD_CHANGED_EMAIL_CONFIRMATION':True,
-    'SEND_CONFIRMATION_EMAIL':True,
-    'SET_USERNAME_RETYPE':True,
-    'SET_PASSWORD_RETYPE':True,
-    'PASSWORD_RESET_CONFIRM_URL':'/password/reset/{uid}/{token}',
-    'USERNAME_RESET_CONFIRM_URL':'/email/reset/{uid}/{token}',
-    'ACTIVATION_URL':'/activate/{uid}/{token}',
-    'SEND_ACTIVATION_EMAIL':True,
-    'SERIALIZERS':{
-        'user_create':'base.serializers.UserRegisterSerializer',
-        'user':'base.serializers.UserRegisterSerializer',
-        'user_delete':'djoser.serializers.UserDeleteSerializer',
-    }
-}
+# #gửi email xác thực bằng djoser
+# DJOSER={
+#     'LOGIN_FIELD':'email',
+#     'USER_CREATE_PASSOWRD_RETYPE':True,
+#     'USERNAME_CHANGED_EMAIL_CONFIRMATION':True,
+#     'PASSWORD_CHANGED_EMAIL_CONFIRMATION':True,
+#     'SEND_CONFIRMATION_EMAIL':True,
+#     'SET_USERNAME_RETYPE':True,
+#     'SET_PASSWORD_RETYPE':True,
+#     'PASSWORD_RESET_CONFIRM_URL':'/password/reset/{uid}/{token}',
+#     'USERNAME_RESET_CONFIRM_URL':'/email/reset/{uid}/{token}',
+#     'ACTIVATION_URL':'/activate/{uid}/{token}',
+#     'SEND_ACTIVATION_EMAIL':True,
+#     'SERIALIZERS':{
+#         'user_create':'base.serializers.UserRegisterSerializer',
+#         'user':'base.serializers.UserRegisterSerializer',
+#         'user_delete':'djoser.serializers.UserDeleteSerializer',
+#     }
+# }
 REST_FRAMEWORK = {
     # 'DEFAULT_SCHEMA_CLASS':'rest_framework.schemas.coreapi.AutoSchema' ,
     'DEFAULT_AUTHENTICATION_CLASSES': (
