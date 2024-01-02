@@ -21,7 +21,7 @@ urlpatterns=[
     path("account/change-password/<str:pk>", views.change_password,name="change-password"),
     path("account/delete-account/<str:pk>",views.delete_account, name="delete-account"),
     path("account/update-account/<str:pk>", views.update_account,name="update-account"),
-    path('account/forgot-password', views.forgot_password_view, name='forgot_password'),
-    path('account/reset-password/<str:token>', views.reset_password_view, name='reset_password'),
+    path('forgot/forgot-password', views.forgot_password_view, name='forgot_password'),
+    path('forgot/reset-password/<str:token>', views.reset_password_view, name='reset_password'),
 ]
 

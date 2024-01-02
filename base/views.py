@@ -19,43 +19,31 @@ from django.db.models import Q
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
 from django.core.paginator import Paginator,EmptyPage
-from drf_spectacular.utils import extend_schema
 from django.contrib.auth.hashers import make_password
 from django.conf import settings
 from django.core.mail import send_mail
-from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
-# from hrmm.settings import 
-# from django.contrib.auth.tokens import urlsafe_base64_decode
-from django.contrib.auth import get_user_model
-from django.core.mail import send_mail
-from django.conf import settings
 from django.http import HttpResponse
-from rest_framework import status
-from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
-from rest_framework_simplejwt.tokens import RefreshToken, TokenError
-from .models import Employee
 from .serializers import ForgotPasswordSerializer, ResetPasswordSerializer
 from django.core.signing import dumps,loads
+
+
+
 @api_view(["GET",])
 def a(request):
     return Response("hello")
-UserAccount = get_user_model()
 
+UserAccount = get_user_model()
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def forgot_password_view(request):
     serializer = ForgotPasswordSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
-
     email = serializer.validated_data['email']
-
     try:
-        # Tìm thông tin Employee bằng email
         employee = Employee.objects.get(Email=email)
-        # Lấy UserAccount tương ứng với EmpID của Employee
         user = UserAccount.objects.get(EmpID=employee.EmpID)
     except Employee.DoesNotExist:
         return Response({"message": "Employee not found for the provided email"},
@@ -63,26 +51,17 @@ def forgot_password_view(request):
     except UserAccount.DoesNotExist:
         return Response({"message": "UserAccount not found for the provided Employee"},
                         status=status.HTTP_404_NOT_FOUND)
-
-    # Tạo token mới cho UserAccount
     try:
-        refresh = RefreshToken.for_user(user)
-        # reset_token = str(refresh.access_token)
+        # refresh = RefreshToken.for_user(user)
+        # # reset_token = str(refresh.access_token)
         data={"UserID":user.UserID}
-        print(data)
-        print("Trên đây là User ID")
         token=dumps(data, key=settings.SECURITY_PASSWORD_SALT)
-        print("--------------------")
-        print("nghi ne nghi ne-------",refresh)
-        print("----------------------")
-        # print("nghi ne nghi ne nghi ne -------",reset_token)
-        print("-----------------------------")
+
     except TokenError as e:
         return Response({"error": "Failed to generate reset token",
                          "status": status.HTTP_500_INTERNAL_SERVER_ERROR},
                         status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    # Gửi email chứa token để đặt lại mật khẩu
     email_subject = "Password Reset Request"
     email_message = f"Click the following link to reset your password: {settings.BACKEND_URL}/account/reset-password/{token}"
 
@@ -101,35 +80,21 @@ def forgot_password_view(request):
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def reset_password_view(request, token):
-    print("Day la token cua ham dat lai mat khau")
-    print(token)
-    print("-----------------------------")
     serializer = ResetPasswordSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
-
-    # Giải mã token để lấy user_id
     try:
         user_id = loads(token,key=settings.SECURITY_PASSWORD_SALT)["UserID"]
-        print("Day là UserID của reset ", user_id)
-        # try:
-        #     user_id = loads(token,key=settings.SECURITY_PASSWORD_SALT).UserID
-        # except Exception as e:
-        #     print(f"Error decoding token: {e}")
         user = UserAccount.objects.get(UserID=user_id)
     except (TypeError, ValueError, OverflowError, UserAccount.DoesNotExist):
         return Response({"error": "Invalid reset token",
                          "status": status.HTTP_400_BAD_REQUEST},
                         status=status.HTTP_400_BAD_REQUEST)
-
     new_password = serializer.validated_data['password']
-
     if not new_password:
         raise ValidationError("New password is required")
-
     hashed_password = make_password(new_password)
     user.password = hashed_password
     user.save()
-
     refresh = RefreshToken.for_user(user)
 
     return Response({"message": "Password reset successfully",

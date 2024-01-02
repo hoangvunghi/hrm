@@ -5,8 +5,8 @@ from leave_type.models import LeaveType
 class Leave(models.Model):
     LeaveID = models.AutoField(primary_key=True)
     EmpID = models.ForeignKey(Employee, on_delete=models.CASCADE)
-    LeaveStartDate = models.DateTimeField()
-    LeaveEndDate = models.DateTimeField()
+    LeaveStartDate = models.DateField()
+    LeaveEndDate = models.DateField()
     LeaveTypeID = models.ForeignKey(LeaveType, on_delete=models.CASCADE)
     Reason = models.CharField(max_length=500)
     LeaveStatus = models.CharField(max_length=255)
