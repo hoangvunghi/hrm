@@ -6,7 +6,6 @@ from base.serializers import EmployeeSerializer
 class JobSerializer(serializers.ModelSerializer):
     class Meta:
         model = Job
-        # fields = ["JobID","JobName","JobChangeHour"]
         fields="__all__"
 
 class EmployeeWithJobSerializer(serializers.Serializer):

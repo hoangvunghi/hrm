@@ -2,15 +2,13 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework import status, permissions
 from base.models import Employee
-from .models import Leave
+from .models import LeaveRequest
 from .serializers import LeaveSerializer,EmployeeWithLeaveSerializer,LeaveWithEmployeeSerializer
 from rest_framework import permissions
 from base.permissions import IsAdminOrReadOnly, IsOwnerOrReadonly
-from django.http import Http404
-from base.views import is_valid_type,obj_update
+from base.views import obj_update
 from django.core.paginator import Paginator,EmptyPage
 from leave_type.models import LeaveType
-from base.views import user_login_view
 
 
 
@@ -19,7 +17,7 @@ from base.views import user_login_view
 def list_leave(request):
     page_index = request.GET.get('pageIndex', 1)
     page_size = request.GET.get('pageSize', 20)
-    order_by = request.GET.get('sort_by', 'LeaveID')
+    order_by = request.GET.get('sort_by', 'LeaveRequestID')
     search_query = request.GET.get('query', '')
     asc = request.GET.get('asc', 'true').lower() == 'true'  
     order_by = f"{'' if asc else '-'}{order_by}"
@@ -38,13 +36,13 @@ def list_leave(request):
         try:
             em_name = str(search_query)
             users = Employee.objects.filter(EmpName__icontains=em_name)
-            leav = Leave.objects.filter(EmpID__in=users)
+            leav = LeaveRequest.objects.filter(EmpID__in=users)
         except ValueError:
             return Response({"error": "Invalid value for name.",
                              "status": status.HTTP_400_BAD_REQUEST},
                             status=status.HTTP_400_BAD_REQUEST)
     else:
-        leav = Leave.objects.all()
+        leav = LeaveRequest.objects.all()
     leav = leav.order_by(order_by)
     paginator = Paginator(leav, page_size)
     try:
@@ -69,16 +67,16 @@ def list_leave(request):
 
 
 @api_view(['DELETE'])
-@permission_classes([permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadonly])
+@permission_classes([permissions.IsAuthenticatedOrReadOnly, IsAdminOrReadOnly])
 def delete_leave(request, pk):
     try:
-        leave = Leave.objects.get(LeaveID=pk)
-    except Leave.DoesNotExist:
-        return Response({"error": "Leave not found",
+        leave = LeaveRequest.objects.get(LeaveRequestID=pk)
+    except LeaveRequest.DoesNotExist:
+        return Response({"error": "Leave Request not found",
                          "status": status.HTTP_404_NOT_FOUND}, 
                         status=status.HTTP_404_NOT_FOUND)
     if request.method == 'DELETE':
-        if leave.LeaveID is not None:
+        if leave.LeaveRequestID is not None:
             leave.delete()
             return Response({"message": "Leave deleted successfully", 
                              "status": status.HTTP_204_NO_CONTENT},
@@ -87,71 +85,78 @@ def delete_leave(request, pk):
             return Response({"error": "Invalid LeaveID", 
                              "status": status.HTTP_400_BAD_REQUEST}, 
                             status=status.HTTP_400_BAD_REQUEST)
+            
+from django.db.models import Sum
+from datetime import datetime, timedelta
 
+def total_leave_days_in_year(employee_id, year):
+    first_day = datetime(year, 1, 1)
+    last_day = datetime(year + 1, 1, 1) - timedelta(days=1)
+    total_leave_days = LeaveRequest.objects.filter(
+        EmpID=employee_id,
+     LeaveStartDate__range=[first_day, last_day]
+    ).aggregate(total=Sum('Duration'))['total']
+    if total_leave_days is None:
+        total_leave_days = 0
+    return total_leave_days
+from django.db import transaction
 
 
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadonly])
 def create_leave(request):
-    
-    request.data['EmpID'] = request.user.EmpID.EmpID
-    # print(request.data,request.user.EmpID)
-    # serializer.validated_data["EmpID"] = request.user.EmpID
+    employee_id = request.user.EmpID.EmpID
+    request.data['EmpID'] = employee_id
+    current_year = datetime.now().year
+    total_leave_days = total_leave_days_in_year(employee_id, current_year)
+    requested_days = request.data.get('Duration', 0)
+    if total_leave_days + requested_days > 30:  
+        return Response({"error": "Exceeds the allowed leave limit for the year",
+                         "status": status.HTTP_400_BAD_REQUEST},
+                        status=status.HTTP_400_BAD_REQUEST)
+    request.data['Duration'] = requested_days
     serializer = LeaveSerializer(data=request.data)
-    required_fields = ["LeaveTypeID","LeaveStartDate","LeaveEndDate","Reason","LeaveStatus"]
+    required_fields = ["LeaveTypeID", "LeaveStartDate", "LeaveEndDate", "Reason"]
     for field in required_fields:
-        if not request.data.get(field):
-            return Response({"error": f"{field.capitalize()} is required","status":status.HTTP_400_BAD_REQUEST},
+        if field not in request.data:
+            return Response({"error": f"{field.capitalize()} is required",
+                             "status": status.HTTP_400_BAD_REQUEST},
                             status=status.HTTP_400_BAD_REQUEST)
     leavetypeid = request.data.get('LeaveTypeID', None)
-    # emp_id = request.data.get('EmpID', None)
-    # leaveid = request.data.get('LeaveID', None)
     try:
         leavetypeid = LeaveType.objects.get(LeaveTypeID=leavetypeid)
     except LeaveType.DoesNotExist:
         return Response({"error": f"LeaveType with LeaveTypeID {leavetypeid} does not exist.",
                          "status": status.HTTP_400_BAD_REQUEST},
                         status=status.HTTP_400_BAD_REQUEST)
-    # if not leaveid.isdigit():
-    #     return Response({"error": "LeaveID must be a valid integer", "status": status.HTTP_400_BAD_REQUEST},
-    #                     status=status.HTTP_400_BAD_REQUEST)
-    # try:
-    #     employee = Employee.objects.get(EmpID=emp_id)
-    # except Employee.DoesNotExist:
-    #     return Response({"error": f"Employee with EmpID {emp_id} does not exist.",
-    #                      "status": status.HTTP_400_BAD_REQUEST},
-    #                     status=status.HTTP_400_BAD_REQUEST)
-    leave_id = request.data.get('LeaveID', None)
-    if Leave.objects.filter(LeaveID=leave_id).exists():
-        return Response({"error": "Leave with this LeaveID already exists", 
-                             "status": status.HTTP_400_BAD_REQUEST}, 
-                            status=status.HTTP_400_BAD_REQUEST)
+    start = datetime.strptime(request.data['LeaveStartDate'], '%Y-%m-%d')
+    end = datetime.strptime(request.data['LeaveEndDate'], '%Y-%m-%d')
+    duration = (end - start).days+1
+    request.data['Duration'] = requested_days
     if serializer.is_valid():
-        serializer.validated_data["EmpID"] = request.user.EmpID
-        serializer.save()
-        return Response({"message": "Leave created successfully","data":serializer.data, 
+        total_leave_days_after = total_leave_days_in_year(employee_id, current_year)+duration
+        if total_leave_days_after >= 30:
+            return Response({"error": "Exceeds the allowed leave limit for the year",
+                             "status": status.HTTP_400_BAD_REQUEST},
+                            status=status.HTTP_400_BAD_REQUEST)
+        with transaction.atomic():
+            serializer.save()
+        return Response({"message": "Leave Request created successfully", "data": serializer.data,
                          "status": status.HTTP_201_CREATED},
                         status=status.HTTP_201_CREATED)
-    return Response({"error":str(serializer.errors),"status":status.HTTP_400_BAD_REQUEST},
+    
+    return Response({"error": str(serializer.errors), "status": status.HTTP_400_BAD_REQUEST},
                     status=status.HTTP_400_BAD_REQUEST)
 
 
 
 def validate_to_update(obj, data):
-    # obj da ton tai
     errors={}
-    dict=['LeaveID', 'EmpID']
+    dict=['LeaveRequestID', 'EmpID']
     for key in data:
         value= data[key]
         if key in dict:
             errors[key]= f"{key} not allowed to change"        
-        # if key=='email' and Employee.objects.filter(Email= value).exclude(EmpID= obj.EmpID).exists():
-        #     errors[key]= f"email ({value}) is really exists"        
-        if  key=='SalAmount':
-            try:
-                sal_amount = float(value)
-            except ValueError:
-                errors[key]= f"amount must be float"  
     return errors
 
 
@@ -160,11 +165,10 @@ def validate_to_update(obj, data):
 @permission_classes([permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadonly])
 def update_leave(request, pk):
     try:
-        leave = Leave.objects.get(LeaveID=pk)
-    except Leave.DoesNotExist:
-        return Response({"error": "Leave not found"}, status=status.HTTP_404_NOT_FOUND)
+        leave = LeaveRequest.objects.get(LeaveRequestID=pk)
+    except LeaveRequest.DoesNotExist:
+        return Response({"error": "Leave Request not found"}, status=status.HTTP_404_NOT_FOUND)
     leavetypeid = request.data.get('LeaveTypeID', None)
-    # leaveid = request.data.get('LeaveID', None)
     if leavetypeid !=None:
         try:
             leavetypeid = LeaveType.objects.get(LeaveTypeID=leavetypeid)

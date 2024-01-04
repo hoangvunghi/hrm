@@ -11,7 +11,6 @@ from django.core.paginator import Paginator,EmptyPage
 
 
 
-#đã test
 @api_view(["GET"])
 @permission_classes([IsAdminOrReadOnly])
 def list_department(request):
@@ -32,8 +31,16 @@ def list_department(request):
         return Response({"error": f"Invalid value for items_per_page. Allowed values are: {', '.join(map(str, allowed_values))}.",
                          "status": status.HTTP_400_BAD_REQUEST},
                         status=status.HTTP_400_BAD_REQUEST)
-
-    depart = Department.objects.all()
+    if search_query:
+        try:
+            em_name = str(search_query)
+            depart = Department.objects.filter(Employee__EmpName__icontains=em_name)
+        except ValueError:
+            return Response({"error": "Invalid value for name.",
+                             "status": status.HTTP_400_BAD_REQUEST},
+                            status=status.HTTP_400_BAD_REQUEST)
+    else:
+        depart = Department.objects.all()
     depart = depart.order_by(order_by)
     paginator = Paginator(depart, page_size)
     try:
@@ -55,20 +62,16 @@ def list_department(request):
 
 
 def validate_to_update(obj, data):
-    # obj da ton tai
+
     errors={}
-    dict=["EmpID"]
+    dict=["DepID","DepShortName"]
     for key in data:
         value= data[key]
         if key in dict:
-            errors[key]= f"{key} not allowed to change"        
-        # if key=='email' and Employee.objects.filter(Email= value).exclude(EmpID= obj.EmpID).exists():
-        #     errors[key]= f"email ({value}) is really exists"        
-        if  key=='SalAmount':
-            try:
-                sal_amount = float(value)
-            except ValueError:
-                errors[key]= f"amount must be float"        
+            errors[key]= f"{key} not allowed to change"               
+        if  key=='DepShortName':
+            if len(value)>3:
+                errors[key]= f"max length of DepShortName is 3"  
     return errors 
 
 
@@ -84,7 +87,7 @@ def obj_update(obj, validated_data):
 @permission_classes([permissions.IsAuthenticatedOrReadOnly, IsAdminOrReadOnly])
 def delete_department(request, pk):
     try:
-        department = Department.objects.get(DepId=pk)
+        department = Department.objects.get(DepID=pk)
     except Department.DoesNotExist:
         return Response({"error": "Department not found","status":status.HTTP_404_NOT_FOUND}, 
                         status=status.HTTP_404_NOT_FOUND)
@@ -94,7 +97,7 @@ def delete_department(request, pk):
             return Response({"message": "Department deleted successfully","status":status.HTTP_204_NO_CONTENT}, 
                             status=status.HTTP_204_NO_CONTENT)
         else:
-            return Response({"error": "Invalid department_id","status":status.HTTP_400_BAD_REQUEST}, 
+            return Response({"error": "Invalid DepID","status":status.HTTP_400_BAD_REQUEST}, 
                             status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -103,36 +106,24 @@ def delete_department(request, pk):
 @permission_classes([permissions.IsAuthenticatedOrReadOnly, IsAdminOrReadOnly])
 def create_department(request):
     serializer = DepartmentSerializer(data=request.data)
-    required_fields = [  'DepName']
+    required_fields = ['DepName',"DepShortName","ManageID"]
     for field in required_fields:
         if not request.data.get(field):
             return Response({"error": f"{field.capitalize()} is required",
                              "status": status.HTTP_400_BAD_REQUEST},
                             status=status.HTTP_400_BAD_REQUEST)
-    # EmpID = request.data.get('EmpID', None)
-    # if not EmpID.isdigit():
-    #     return Response({"error": "EmpID must be a valid integer", "status": status.HTTP_400_BAD_REQUEST},
-    #                     status=status.HTTP_400_BAD_REQUEST)
-    # try:
-    #     employee = Employee.objects.get(EmpID=EmpID)
-    # except Employee.DoesNotExist:
-    #     return Response({"error": f"Employee with EmpID {EmpID} does not exist.",
-    #                      "status": status.HTTP_400_BAD_REQUEST},
-    #                     status=status.HTTP_400_BAD_REQUEST)
-    # department_id = request.data.get('DepID', None)
-    # department_name = request.data.get('DepName', None)
-    # if Department.objects.filter(DepID=department_id).exists():
-    #     return Response({"error": "Department with this DepID already exists",
-    #                          "status":status.HTTP_400_BAD_REQUEST}, status=status.HTTP_400_BAD_REQUEST)
-    # if not department_id.isdigit():
-    #     return Response({"error": "DepID must be a valid integer", "status": status.HTTP_400_BAD_REQUEST},
-    #                     status=status.HTTP_400_BAD_REQUEST)
-    # existing_department = Department.objects.filter(DepID=department_id, DepName=department_name).first()
-    # if existing_department and existing_department.employee_set.filter(EmpID=EmpID).exists():
-    #     return Response({"error": f"""User with this user_id already exists for department_id and 
-    #                          department_name """,
-    #                          "status": status.HTTP_400_BAD_REQUEST},
-    #                         status=status.HTTP_400_BAD_REQUEST)
+    DepShortName = request.data.get('DepShortName', None)
+    if len(DepShortName)>3:
+        return Response({"error": "Max length of DepShortName is 3 ", "status": status.HTTP_400_BAD_REQUEST},
+                        status=status.HTTP_400_BAD_REQUEST)
+    manageID = request.data.get('ManageID', None)
+
+    try:
+        employee = Employee.objects.get(EmpID=manageID)
+    except Employee.DoesNotExist:
+        return Response({"error": f"Employee with EmpID does not exist.",
+                         "status": status.HTTP_400_BAD_REQUEST},
+                        status=status.HTTP_400_BAD_REQUEST)
     if serializer.is_valid():
         serializer.save()
         return Response({"message": "Department created successfully","data":serializer.data,
@@ -150,15 +141,15 @@ def update_department(request, pk):
         return Response({"error": "Department not found"}, status=status.HTTP_404_NOT_FOUND)
     if request.method == 'PATCH':
         errors = []
-        emp_id = request.data.get('EmpID')
-        if emp_id is not None:
+        manage_id = request.data.get('ManageID')
+        if manage_id is not None:
             try:
-                emp_id = int(emp_id)
+                manage_id = int(manage_id)
             except ValueError:
                 errors.append("EmpID must be a valid integer")
             else:
                 try:
-                    employee = Employee.objects.get(EmpID=emp_id)
+                    employee = Employee.objects.get(EmpID=manage_id)
                 except Employee.DoesNotExist:
                     errors.append("Employee not found with the provided EmpID")
         errors= validate_to_update(department, request.data)

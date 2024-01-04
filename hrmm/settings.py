@@ -67,6 +67,7 @@ INSTALLED_APPS = [
     'corsheaders',
     # "import_export",
     'drf_spectacular',
+    "role.apps.RoleConfig",
     
 ]
 X_FRAME_OPTIONS = "SAMEORIGIN"              
@@ -112,7 +113,7 @@ CORS_ALLOWED_ORIGINS=[
     "https://hrmbe.onrender.com",
 ]
 SECURITY_PASSWORD_SALT="abcd"
-BACKEND_URL = "http://127.0.0.1:8000"
+BACKEND_URL = "http://192.168.1.17:8765"
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 

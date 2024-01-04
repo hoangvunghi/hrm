@@ -10,7 +10,7 @@ from .models import Employee,UserAccount
 from job.models import Job
 from department.models import Department
 from timesheet.models import TimeSheet
-from leave.models import Leave
+from leave.models import LeaveRequest
 from base.permissions import IsAdminOrReadOnly, IsOwnerOrReadonly
 from django.contrib.auth import get_user_model
 from django.contrib.auth.hashers import check_password
@@ -63,7 +63,7 @@ def forgot_password_view(request):
                         status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     email_subject = "Password Reset Request"
-    email_message = f"Click the following link to reset your password: {settings.BACKEND_URL}/account/reset-password/{token}"
+    email_message = f"Click the following link to reset your password: {settings.BACKEND_URL}/forgot/reset-password/{token}"
 
     send_mail(
         email_subject,
@@ -273,7 +273,7 @@ def delete_employee(request, pk):
         employee.delete()
         delete_data_if_user_quitte(pk)
         TimeSheet.objects.filter(EmpID=pk).delete()
-        Leave.objects.filter(EmpID=pk).delete()
+        LeaveRequest.objects.filter(EmpID=pk).delete()
         Job.objects.filter(EmpID=pk).delete()
         Department.objects.filter(EmpID=pk).delete()
         return Response({"message": "Employee deleted successfully",
@@ -345,21 +345,15 @@ def create_employee(request):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticatedOrReadOnly, IsAdminOrReadOnly])
 def create_useraccount(request):
     serializer = UserSerializer(data=request.data)
-    required_fields = ['UserID', 'password', 'EmpID']
+    required_fields = ['EmpID']
     for field in required_fields:
         if not request.data.get(field):
             return Response({"error": f"{field.capitalize()} is required", "status": status.HTTP_400_BAD_REQUEST},
                             status=status.HTTP_400_BAD_REQUEST)
-    # user_status = request.data.get('UserStatus')
-    # if user_status is not None and user_status.lower() not in ['1', '0']:
-        # return Response({"error": "UserStatus must be a valid boolean", "status": status.HTTP_400_BAD_REQUEST},
-                        # status=status.HTTP_400_BAD_REQUEST)
-    user_id = request.data.get('UserID', None)
     emp_id = request.data.get('EmpID', None)
     if UserAccount.objects.filter(EmpID=emp_id).exists():
         return Response({"error": "A user account is already associated with this EmpID",
@@ -371,16 +365,29 @@ def create_useraccount(request):
         return Response({"error": f"Employee with EmpID {emp_id} does not exist.",
                          "status": status.HTTP_400_BAD_REQUEST},
                         status=status.HTTP_400_BAD_REQUEST)
-    if UserAccount.objects.filter(UserID=user_id).exists():
+    department = employee.DepID
+    if not department:
+        return Response({"error": "Employee is not associated with any department.",
+                         "status": status.HTTP_400_BAD_REQUEST},
+                        status=status.HTTP_400_BAD_REQUEST)
+    dep_name = department.DepName
+    dep_short_name= department.DepShortName
+    position_count = count_employee_department(dep_name)
+    formatted_position_count = f"{position_count :03d}"  
+    new_user_id = f"{dep_short_name.lower()}{formatted_position_count}"
+    if UserAccount.objects.filter(UserID=new_user_id).exists():
         return Response({"error": "User with this UserID already exists",
                          "status": status.HTTP_400_BAD_REQUEST},
                         status=status.HTTP_400_BAD_REQUEST)
+    request.data['UserID'] = new_user_id
+    request.data["password"]="12345678"
     if serializer.is_valid():
         serializer.save()
         return Response({"message": "User created successfully", "data": serializer.data,
                          "status": status.HTTP_201_CREATED},
                         status=status.HTTP_201_CREATED)
-    return Response({"error":serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+    return Response({"error": serializer.errors,"status":status.HTTP_400_BAD_REQUEST}, status=status.HTTP_400_BAD_REQUEST)
+
 
 
 
@@ -391,8 +398,6 @@ def validate_to_update(obj, data):
         value= data[key]
         if key in dict:
             errors[key]= f"{key} not allowed to change"        
-        # if key=='email' and Employee.objects.filter(Email= value).exclude(EmpID= obj.EmpID).exists():
-        #     errors[key]= f"email ({value}) is really exists"        
         if  key=='SalAmount':
             try:
                 sal_amount = float(value)
@@ -478,7 +483,6 @@ def update_employee(request, pk):
         return Response({"messeger": "update succesfull", "data": serializer.data,"status":status.HTTP_200_OK},
                         status=status.HTTP_200_OK)    
 
-        
         
         
 @api_view(["GET",])
@@ -572,7 +576,7 @@ def delete_data_if_user_quitte(EmpID):
         user = Employee.objects.get(EmpID=EmpID)
         if user.status == 'quitte':
             TimeSheet.objects.filter(EmpID=user).delete()
-            Leave.objects.filter(EmpID=user).delete()
+            LeaveRequest.objects.filter(EmpID=user).delete()
             UserAccount.objects.filter(EmpID=user).delete()
             return Response(f"Deleted data for user {user.email} because the status is 'quitte'"
                             ,status=status.HTTP_200_OK)
@@ -624,7 +628,7 @@ def list_user_password(request):
     for account_data in current_page_data.object_list:
         data = {
             "UserID": account_data.UserID,
-            "password": account_data.password,
+            "password": account_data.get_password(),
             "UserStatus":account_data.UserStatus,
         }
         serializer = UserSerializer(account_data)
@@ -646,4 +650,10 @@ def list_user_password(request):
         "data": serialized_data,
         "status": status.HTTP_200_OK,
     }, status=status.HTTP_200_OK)
+
+
+def count_employee_department(department_name):
+    department = Department.objects.get(DepName=department_name)
+    employee_count = Employee.objects.filter(DepID=department).count()
+    return employee_count
 

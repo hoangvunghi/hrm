@@ -95,36 +95,19 @@ def delete_job(request, pk):
 @permission_classes([permissions.IsAuthenticatedOrReadOnly, IsAdminOrReadOnly])
 def create_job(request):
     serializer = JobSerializer(data=request.data)
-    required_fields = ['JobName','JobChangeHour',"JobID","DepID"]
+    required_fields = ['JobName',"JobID","DepID"]
     for field in required_fields:
         if not request.data.get(field):
             return Response({"error": f"{field} is required","status":status.HTTP_400_BAD_REQUEST},
                             status=status.HTTP_400_BAD_REQUEST)
-    # JobID = request.data.get('JobID', None)
     DepID = request.data.get('DepID', None)
-    JobChangeHour = request.data.get('JobChangeHour')
-    if not DepID.isdigit():
-        return Response({"error": "DepID must be a valid integer", "status": status.HTTP_400_BAD_REQUEST},
-                        status=status.HTTP_400_BAD_REQUEST)
-    # if not JobID.isdigit():
-    #     return Response({"error": "JobID must be a valid integer", "status": status.HTTP_400_BAD_REQUEST},
-    #                     status=status.HTTP_400_BAD_REQUEST)
+   
     try:
         department = Department.objects.get(DepID=DepID)
     except Department.DoesNotExist:
         return Response({"error": f"Department with DepID {DepID} does not exist.",
                          "status": status.HTTP_400_BAD_REQUEST},
                         status=status.HTTP_400_BAD_REQUEST)
-    try:
-        float(JobChangeHour)
-    except ValueError:
-        return Response({"error": "JobChangeHour must be a valid number or string",
-                             "status": status.HTTP_400_BAD_REQUEST},
-                            status=status.HTTP_400_BAD_REQUEST)
-    # position_id = request.data.get('JobID', None)
-    # if Job.objects.filter(JobID=position_id).exists():
-    #     return Response({"error": "Job with this JobID already exists",
-    #                          "status":status.HTTP_400_BAD_REQUEST}, status=status.HTTP_400_BAD_REQUEST)
     if serializer.is_valid():
         serializer.save()
         return Response({"message": "Job created successfully","data":serializer.data,
@@ -135,20 +118,15 @@ def create_job(request):
 
 
 def validate_to_update(obj, data):
-    # obj da ton tai
+
     errors={}
     dict=['JobID']
     for key in data:
         value= data[key]
         if key in dict:
             errors[key]= f"{key} not allowed to change"        
-        # if key=='email' and Employee.objects.filter(Email= value).exclude(EmpID= obj.EmpID).exists():
-        #     errors[key]= f"email ({value}) is really exists"        
-        if  key=='JobChangeHour':
-            try:
-                sal_amount = float(value)
-            except ValueError:
-                errors[key]= f"JobChangeHour must be float"        
+      
+
     return errors 
 
 

@@ -3,7 +3,7 @@ from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseU
 from datetime import datetime
 from department.models import Department
 from job.models import Job
-
+from role.models import Role
 
 
 class Employee(models.Model):
@@ -18,6 +18,13 @@ class Employee(models.Model):
     DepID = models.ForeignKey(Department, on_delete=models.DO_NOTHING)
     JobID = models.ForeignKey(Job, on_delete=models.DO_NOTHING)
     EmpStatus = models.BooleanField(default=True)
+    Gender=models.CharField(max_length=12)
+    RoleID=models.ForeignKey(Role,on_delete=models.SET_NULL,null=True,blank=True)
+    TaxCode=models.CharField(max_length=100)
+    BankAccountNumer=models.CharField(max_length=50)
+    Bank=models.CharField(max_length=100)
+    BankBranch=models.CharField(max_length=100)
+    
 
 
 class UserAccountManager(BaseUserManager):
@@ -64,7 +71,7 @@ class UserAccount(AbstractBaseUser, PermissionsMixin):
     last_login = None
     email=None
     def get_password(self):
-        return self.password
+        return self.password[21:30]
 
 
 class Project(models.Model): 
