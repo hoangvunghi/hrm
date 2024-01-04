@@ -9,6 +9,7 @@ from rest_framework import permissions
 from django.core.paginator import Paginator,EmptyPage
 from django.utils import timezone
 
+
 #đã test, có thể tìm theo tên
 @api_view(["GET"])
 @permission_classes([IsAdminOrReadOnly])
@@ -153,47 +154,46 @@ def list_timesheet_nv(request):
         "data": serialized_data,
         "status": status.HTTP_200_OK
     }, status=status.HTTP_200_OK)
-    
+from datetime import timedelta
+
+def get_existing_timesheet(emp_id, date):
+    return TimeSheet.objects.filter(EmpID=emp_id, TimeIn__date=date).first()
 
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticatedOrReadOnly])
 def check_in(request):
+    emp_id = request.user.EmpID
+    current_date = timezone.now().date()
 
-    existing_timesheet = TimeSheet.objects.filter(EmpID=request.user.EmpID, TimeIn__date=timezone.now().date()).first()
+    existing_timesheet = get_existing_timesheet(emp_id, current_date)
 
-    if existing_timesheet:
-        return Response({"error": "Cannot check in. Already checked in today.",
-                         "status": status.HTTP_400_BAD_REQUEST},
-                        status=status.HTTP_400_BAD_REQUEST)
-
-
-    timesheet = TimeSheet.objects.create(EmpID=request.user.EmpID, TimeIn=timezone.now())
+    if not existing_timesheet:
+        timesheet = TimeSheet.objects.create(EmpID=emp_id, TimeIn=timezone.now())
+    else:
+        checkin_time = timezone.now()  + timedelta(hours=7)  
+        existing_timesheet.data_dict.setdefault("checkin", []).append(checkin_time.strftime("%Y-%m-%d %H:%M:%S"))
+        existing_timesheet.save()
+        timesheet = existing_timesheet
 
     serializer = TimeSheetSerializer(timesheet)
-    return Response({"message": "Checked in successfully", "data": serializer.data,
-                     "status": status.HTTP_200_OK}, status=status.HTTP_200_OK)
+    return Response({"message": "Checked in successfully", "data": serializer.data, "status": status.HTTP_200_OK})
 
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticatedOrReadOnly])
 def check_out(request):
+    emp_id = request.user.EmpID
+    current_date = timezone.now().date()
 
-    existing_timesheet = TimeSheet.objects.filter(EmpID=request.user.EmpID, TimeOut__isnull=False, TimeIn__date=timezone.now().date()).first()
+    existing_timesheet = get_existing_timesheet(emp_id, current_date)
 
-    if existing_timesheet:
-        return Response({"error": "Cannot check out. Already checked out today.",
-                         "status": status.HTTP_400_BAD_REQUEST},
-                        status=status.HTTP_400_BAD_REQUEST)
+    if not existing_timesheet or not existing_timesheet.TimeIn:
+        return Response({"error": "Cannot check out. Not checked in today.", "status": status.HTTP_400_BAD_REQUEST}, status=status.HTTP_400_BAD_REQUEST)
 
-    timesheet = TimeSheet.objects.filter(EmpID=request.user.EmpID, TimeOut__isnull=True, TimeIn__date=timezone.now().date()).first()
+    checkout_time = timezone.now() 
+    checkout_time_data=  timezone.now() + timedelta(hours=7)  
+    existing_timesheet.TimeOut = checkout_time
+    existing_timesheet.data_dict.setdefault("checkout", []).append(checkout_time_data.strftime("%Y-%m-%d %H:%M:%S"))
+    existing_timesheet.save()
 
-    if timesheet:
-        timesheet.TimeOut = timezone.now()
-        timesheet.save()
-
-        serializer = TimeSheetSerializer(timesheet)
-        return Response({"message": "Checked out successfully", "data": serializer.data,
-                         "status": status.HTTP_200_OK}, status=status.HTTP_200_OK)
-    else:
-        return Response({"error": "Cannot check out. Not checked in today.",
-                         "status": status.HTTP_400_BAD_REQUEST},
-                        status=status.HTTP_400_BAD_REQUEST)
+    serializer = TimeSheetSerializer(existing_timesheet)
+    return Response({"message": "Checked out successfully", "data": serializer.data, "status": status.HTTP_200_OK})

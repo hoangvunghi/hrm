@@ -8,3 +8,5 @@ class TimeSheet(models.Model):
     TimeIn = models.DateTimeField(null=True, blank=True)
     TimeOut = models.DateTimeField(null=True, blank=True)
     EmpID = models.ForeignKey(Employee, on_delete=models.CASCADE)    
+    data_dict = models.JSONField(default=dict)
+    

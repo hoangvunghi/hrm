@@ -85,9 +85,18 @@ def list_leave_nv(request):
                          "status": status.HTTP_400_BAD_REQUEST},
                         status=status.HTTP_400_BAD_REQUEST)
     
+
     current_employee = request.user.EmpID.EmpID
 
     leav = LeaveRequest.objects.filter(EmpID=current_employee)
+
+
+    total_taken_leave_days = leav.aggregate(total=Sum('Duration'))['total']
+    if total_taken_leave_days is None:
+        total_taken_leave_days = 0
+
+    allowed_leave_limit = 30
+    remaining_leave_days = max(0, allowed_leave_limit - total_taken_leave_days)
 
     leav = leav.order_by(order_by)
     paginator = Paginator(leav, page_size)
@@ -98,16 +107,20 @@ def list_leave_nv(request):
         return Response({"error": "Page not found",
                          "status": status.HTTP_404_NOT_FOUND},
                         status=status.HTTP_404_NOT_FOUND)
+    
     serialized_data = []
     for leave_instance in current_page_data.object_list:
         user_account_data = EmployeeWithLeaveSerializer(leave_instance.EmpID).data
         leave_data = LeaveWithEmployeeSerializer(leave_instance).data
         combined_data = {**user_account_data, **leave_data}
         serialized_data.append(combined_data)
+
+
     return Response({
         "total_rows": leav.count(),
         "current_page": int(page_index),
         "data": serialized_data,
+        "remaining_leave_days": remaining_leave_days,  
         "status": status.HTTP_200_OK
     }, status=status.HTTP_200_OK)
 
@@ -193,7 +206,6 @@ def create_leave(request):
     
     return Response({"error": str(serializer.errors), "status": status.HTTP_400_BAD_REQUEST},
                     status=status.HTTP_400_BAD_REQUEST)
-
 
 
 def validate_to_update(obj, data):
