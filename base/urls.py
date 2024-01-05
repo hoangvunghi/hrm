@@ -23,5 +23,6 @@ urlpatterns=[
     path("account/update-account/<str:pk>", views.update_account,name="update-account"),
     path('forgot/forgot-password', views.forgot_password_view, name='forgot_password'),
     path('forgot/reset-password/<str:token>', views.reset_password_view, name='reset_password'),
+    path("employee/birthday",views.get_birthday_employee,name="get-birthday")
 ]
 

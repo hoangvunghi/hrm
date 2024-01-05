@@ -28,7 +28,7 @@ from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
 from .serializers import ForgotPasswordSerializer, ResetPasswordSerializer
 from django.core.signing import dumps,loads
-
+from datetime import datetime,timedelta
 
 
 @api_view(["GET",])
@@ -254,6 +254,8 @@ def delete_account(request, pk):
                          "status":status.HTTP_404_NOT_FOUND},
                         status=status.HTTP_404_NOT_FOUND)
     if request.method == 'DELETE':
+        delete_data_if_user_quitte(pk)
+
         account.delete()
         return Response({"message": "Employee deleted successfully",
                          "status":status.HTTP_204_NO_CONTENT}, 
@@ -659,3 +661,24 @@ def count_employee_department(department_name):
     employee_count = Employee.objects.filter(DepID=department).count()
     return employee_count
 
+
+from django.utils import timezone
+
+@api_view(["GET"])
+def get_birthday_employee(request):
+    today = timezone.now()
+    three_days_later = today + timedelta(days=3)
+
+    employees = Employee.objects.filter(BirthDate__range=[today.date(), three_days_later.date()])
+    number=employees.count()
+    employee_data = [
+        {
+            
+            'EmpName': employee.EmpName,
+            "Date of birth":employee.BirthDate.strftime('%d-%m-%Y'),
+            'The number of days remaining until the birthday:': (employee.BirthDate - today).days
+        }
+        for employee in employees
+    ]
+
+    return Response({"message":f"{number} people's birthdays approaching","data":employee_data,"status":status.HTTP_200_OK}, status=status.HTTP_200_OK)
