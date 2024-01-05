@@ -590,7 +590,6 @@ def delete_data_if_user_quitte(EmpID):
         return Response(f"Error: {str(e)}",
                         status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
-    
 @api_view(["GET"])
 @permission_classes([IsAdminOrReadOnly])
 def list_user_password(request):
@@ -600,9 +599,11 @@ def list_user_password(request):
     search_query = request.GET.get('query', '')
     asc = request.GET.get('asc', 'true').lower() == 'true'  
     order_by = f"{'' if asc else '-'}{order_by}"
-    account = UserAccount.objects.filter(
+    
+    accounts = UserAccount.objects.filter(
         Q(UserID__icontains=search_query)
     ).order_by(order_by)
+
     try:
         page_size = int(page_size)
     except ValueError:
@@ -614,8 +615,10 @@ def list_user_password(request):
         return Response({"error": f"Invalid value for items_per_page. Allowed values are: {', '.join(map(str, allowed_values))}.",
                          "status": status.HTTP_400_BAD_REQUEST},
                         status=status.HTTP_400_BAD_REQUEST)
-    total_userid = account.count()
-    paginator = Paginator(account, page_size)
+    
+    total_userid = accounts.count()
+    paginator = Paginator(accounts, page_size)
+    
     try:
         current_page_data = paginator.page(page_index)
     except EmptyPage:
@@ -626,24 +629,23 @@ def list_user_password(request):
     serialized_data = []
 
     for account_data in current_page_data.object_list:
-        data = {
-            "UserID": account_data.UserID,
-            "password": account_data.get_password(),
-            "UserStatus":account_data.UserStatus,
-        }
         serializer = UserSerializer(account_data)
+        data = {
+            "UserID": serializer.data["UserID"],
+            "password": account_data.get_password(),
+            "UserStatus": account_data.UserStatus,
+            "EmpID": serializer.data["EmpID"],
+        }
 
         emp_id = serializer.data["EmpID"]
         try:
-            user = UserAccount.objects.get(EmpID=emp_id)
-            empName = Employee.objects.get(EmpID=emp_id).EmpName
-
-            data["EmpName"] = empName
-        except UserAccount.DoesNotExist:
-            data["UserID"] = None
-            data["password"] = None
+            emp_name = Employee.objects.get(EmpID=emp_id).EmpName
+            data["EmpName"] = emp_name
+        except Employee.DoesNotExist:
+            data["EmpName"] = None
 
         serialized_data.append(data)
+
     return Response({
         "total_rows": total_userid,
         "current_page": int(page_index),
