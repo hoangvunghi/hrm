@@ -16,7 +16,7 @@ from leave_type.models import LeaveType
 @permission_classes([IsAdminOrReadOnly])  
 def list_leave(request):
     page_index = request.GET.get('pageIndex', 1)
-    page_size = request.GET.get('pageSize', 20)
+    page_size = request.GET.get('pageSize', 10)
     order_by = request.GET.get('sort_by', 'LeaveRequestID')
     search_query = request.GET.get('query', '')
     asc = request.GET.get('asc', 'true').lower() == 'true'  
@@ -68,7 +68,7 @@ def list_leave(request):
 @permission_classes([IsOwnerOrReadonly])  
 def list_leave_nv(request):
     page_index = request.GET.get('pageIndex', 1)
-    page_size = request.GET.get('pageSize', 20)
+    page_size = request.GET.get('pageSize', 10)
     order_by = request.GET.get('sort_by', 'LeaveRequestID')
     asc = request.GET.get('asc', 'true').lower() == 'true'  
     order_by = f"{'' if asc else '-'}{order_by}"

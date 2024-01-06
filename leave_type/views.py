@@ -16,7 +16,7 @@ from django.core.paginator import Paginator,EmptyPage
 @permission_classes([IsAdminOrReadOnly])
 def list_leave_type(request):
     page_index = request.GET.get('pageIndex', 1)
-    page_size = request.GET.get('pageSize', 20)
+    page_size = request.GET.get('pageSize', 10)
     total_leave = LeaveRequest.objects.count()
     order_by = request.GET.get('sort_by', 'LeaveTypeID')
     search_query = request.GET.get('query', '')

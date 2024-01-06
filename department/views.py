@@ -15,7 +15,7 @@ from django.core.paginator import Paginator,EmptyPage
 @permission_classes([IsAdminOrReadOnly])
 def list_department(request):
     page_index = request.GET.get('pageIndex', 1)
-    page_size = request.GET.get('pageSize', 20)
+    page_size = request.GET.get('pageSize', 10)
     order_by = request.GET.get('sort_by', 'DepID')
     search_query = request.GET.get('query', '')
     asc = request.GET.get('asc', 'true').lower() == 'true'

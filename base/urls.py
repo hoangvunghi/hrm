@@ -8,12 +8,12 @@ from django.contrib import admin
  
 urlpatterns=[
     path("login", views.user_login_view, name="login"),
-    path('employee/create-useraccount', views.create_useraccount, name='create-account'),
+    # path('employee/create-useraccount', views.create_useraccount, name='create-account'),
     path("employee/list-account",views.find_employee,name="list-EmpID"),
     path('employee/create-employee', views.create_employee, name='create-employee'),
     path('employee/update-employee/<str:pk>', views.update_employee, name='update-employee'),
     path('employee/delete-employee/<str:pk>', views.delete_employee, name='delete-employee'),
-    path('change-password/<str:pk>', views.change_password, name='change-password'),
+    # path('change-password/<str:pk>', views.change_password, name='change-password'),
     path('employee/list-username', views.list_user_password, name="list_user_password"),
     path("",views.a),
     path('account/reset-password/<int:pk>', views.reset_employee_password, name='reset_employee_password'),

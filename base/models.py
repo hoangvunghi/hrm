@@ -14,7 +14,7 @@ class Employee(models.Model):
     BirthDate = models.DateTimeField(null=True)
     Address = models.CharField(max_length=255,null=True)
     PhotoPath = models.CharField(max_length=255,null=True)
-    Email = models.EmailField(null=True)
+    Email = models.EmailField()
     DepID = models.ForeignKey(Department, on_delete=models.DO_NOTHING)
     JobID = models.ForeignKey(Job, on_delete=models.DO_NOTHING)
     EmpStatus = models.BooleanField(default=True)

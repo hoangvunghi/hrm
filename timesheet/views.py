@@ -16,7 +16,7 @@ from datetime import timedelta
 @permission_classes([IsAdminOrReadOnly])
 def list_timesheet(request):
     page_index = request.GET.get('pageIndex', 1) 
-    page_size = request.GET.get('pageSize', 20) 
+    page_size = request.GET.get('pageSize', 10) 
     total_attendance = TimeSheet.objects.count()
     order_by = request.GET.get('sort-by', 'TimeID')
     asc = request.GET.get('asc', 'true').lower() == 'true'  
@@ -117,7 +117,7 @@ def delete_timesheet(request, pk):
 @permission_classes([IsOwnerOrReadonly])
 def list_timesheet_nv(request):
     page_index = request.GET.get('pageIndex', 1)
-    page_size = request.GET.get('pageSize', 20)
+    page_size = request.GET.get('pageSize', 10)
     order_by = request.GET.get('sort_by', 'TimeID')
     asc = request.GET.get('asc', 'true').lower() == 'true'
     order_by = f"{'' if asc else '-'}{order_by}"

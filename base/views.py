@@ -214,34 +214,55 @@ def reset_employee_password(request, pk):
                      "data": serializer.data,
                      "status": status.HTTP_200_OK},
                     status=status.HTTP_200_OK)
+    
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadonly])
 def change_password(request, pk):
     if request.method == 'POST':
         current_password = request.data.get('current_password')
         new_password = request.data.get('new_password')
-        if not new_password:
-            return Response({'success': False, 'message': 'New password cannot be empty.',
-                             "status":status.HTTP_400_BAD_REQUEST},
+        
+        if not is_strong_password(new_password):
+            return Response({'success': False, 'message': 'New password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one digit, and one special character.',
+                             "status": status.HTTP_400_BAD_REQUEST},
                             status=status.HTTP_400_BAD_REQUEST)
+
         UserAccount = get_user_model()
         try:
             user_account = UserAccount.objects.get(EmpID=pk)
         except UserAccount.DoesNotExist:
             return Response({'success': False, 'message': 'User not found.',
-                             "status":status.HTTP_404_NOT_FOUND}
-                            ,status=status.HTTP_404_NOT_FOUND)
+                             "status": status.HTTP_404_NOT_FOUND},
+                            status=status.HTTP_404_NOT_FOUND)
+        
         if not check_password(current_password, user_account.password):
             return Response({'success': False, 'message': 'Current password is incorrect.',
-                             "status":status.HTTP_400_BAD_REQUEST},
+                             "status": status.HTTP_400_BAD_REQUEST},
                             status=status.HTTP_400_BAD_REQUEST)
+
+        # Đặt mật khẩu mới và lưu
         user_account.set_password(new_password)
         user_account.save()
+        
         return Response({'success': True, 'message': 'Password changed successfully.',
-                         "status":status.HTTP_200_OK},status=status.HTTP_200_OK)
+                         "status": status.HTTP_200_OK}, status=status.HTTP_200_OK)
+
     return Response({'success': False, 'message': 'Invalid request method.',
-                     "status":status.HTTP_400_BAD_REQUEST},
+                     "status": status.HTTP_400_BAD_REQUEST},
                     status=status.HTTP_400_BAD_REQUEST)
+
+def is_strong_password(password):
+    if (
+        len(password) >= 8
+        and any(c.isupper() for c in password)
+        and any(c.islower() for c in password)
+        and any(c.isdigit() for c in password)
+        and any(c in r'!@#$%^&*()-_=+[]{}|;:,.<>?/"`~' for c in password)
+    ):
+        return True
+    else:
+        return False
+
 
 
 @api_view(['DELETE'])
@@ -317,98 +338,74 @@ def is_valid_type(request):
     return Response({"message": "Data is valid","status":status.HTTP_200_OK}
                     , status=status.HTTP_200_OK)
 
-
-
 UserAccount = get_user_model()
 
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticatedOrReadOnly, IsAdminOrReadOnly])
 def create_employee(request):
     serializer = EmployeeCreateSerializer(data=request.data)
-    required_fields = [ 'EmpName']
-    for field in required_fields:
-        if not request.data.get(field):
-            return Response({"error": f"{field.capitalize()} is required","status":status.HTTP_400_BAD_REQUEST},
+    required_fields = ['EmpName',"Email"]
+    if 'Email'  in request.data and  request.data['Email'] !="":
+        new_email = request.data['Email'].lower()
+        email_regex = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
+        if not re.match(email_regex, new_email):
+            return Response({"error": "Invalid email format","status":status.HTTP_400_BAD_REQUEST}, 
                             status=status.HTTP_400_BAD_REQUEST)
-    # emp_id = request.data.get('EmpID', '')
-    # if not emp_id.isdigit():
-    #     return Response({"error": "EmpID must be a valid integer", "status": status.HTTP_400_BAD_REQUEST},
-    #                     status=status.HTTP_400_BAD_REQUEST)
-    # user_id = request.data.get('EmpID', None)
-    # if Employee.objects.filter(EmpID=user_id).exists():
-    #     return Response({"error": "User with this EmpID already exists",
-    #                          "status":status.HTTP_400_BAD_REQUEST}, 
-    #                         status=status.HTTP_400_BAD_REQUEST)
-    if serializer.is_valid():
-        serializer.save()
-        return Response({"message": "User created successfully","data":serializer.data,
-                         "status":status.HTTP_201_CREATED}, 
-                        status=status.HTTP_201_CREATED)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-@api_view(['POST'])
-@permission_classes([permissions.IsAuthenticatedOrReadOnly, IsAdminOrReadOnly])
-def create_useraccount(request):
-    serializer = UserSerializer(data=request.data)
-    required_fields = ['EmpID']
     for field in required_fields:
         if not request.data.get(field):
             return Response({"error": f"{field.capitalize()} is required", "status": status.HTTP_400_BAD_REQUEST},
                             status=status.HTTP_400_BAD_REQUEST)
-    emp_id = request.data.get('EmpID', None)
-    if UserAccount.objects.filter(EmpID=emp_id).exists():
-        return Response({"error": "A user account is already associated with this EmpID",
+    employee_email = request.data['Email']
+    if Employee.objects.filter(Email=employee_email).exists():
+        return Response({"error": "This email is already associated with an existing employee",
                          "status": status.HTTP_400_BAD_REQUEST},
                         status=status.HTTP_400_BAD_REQUEST)
-    try:
-        employee = Employee.objects.get(EmpID=emp_id)
-    except Employee.DoesNotExist:
-        return Response({"error": f"Employee with EmpID {emp_id} does not exist.",
-                         "status": status.HTTP_400_BAD_REQUEST},
-                        status=status.HTTP_400_BAD_REQUEST)
-    department = employee.DepID
-    if not department:
-        return Response({"error": "Employee is not associated with any department.",
-                         "status": status.HTTP_400_BAD_REQUEST},
-                        status=status.HTTP_400_BAD_REQUEST)
-    dep_name = department.DepName
-    dep_short_name= department.DepShortName
-    position_count = count_employee_department(dep_name)
-    formatted_position_count = f"{position_count:03d}"  
-    new_user_id = f"{dep_short_name.lower()}{formatted_position_count}"
-    if UserAccount.objects.filter(UserID=new_user_id).exists():
-        return Response({"error": "User with this UserID already exists",
-                         "status": status.HTTP_400_BAD_REQUEST},
-                        status=status.HTTP_400_BAD_REQUEST)
-    request.data['UserID'] = new_user_id
-    request.data["password"] = "123A567a"
-    
-    employee_email = employee.Email
-    employee_name=employee.EmpName
     if serializer.is_valid():
-        serializer.save()
-        
-        email_subject = "Chào mừng đến với WhiteNeuron"
-        email_message = f" Xin chào {employee_name},\n\n"
+        employee = serializer.save()
+        emp_id = employee.EmpID
+        if not UserAccount.objects.filter(EmpID=emp_id).exists():
+            department = employee.DepID
+            if not department:
+                return Response({"error": "Employee is not associated with any department.",
+                                "status": status.HTTP_400_BAD_REQUEST},
+                                status=status.HTTP_400_BAD_REQUEST)
+            dep_name = department.DepName
+            dep_short_name = department.DepShortName
+            position_count = count_employee_department(dep_name)
+            formatted_position_count = f"{position_count:03d}"  
+            new_user_id = f"{dep_short_name.lower()}{formatted_position_count}"
+            user_account=UserAccount.objects.create_user(
+                UserID=new_user_id,
+                password="123A567a",  
+                EmpID=employee
+            )
 
-        email_message += f" Tài khoản của bạn đã được kích hoạt thành công trong hệ thống.\n"
-        email_message += f"\tUsername: {new_user_id}\n"
-        email_message += f"\tPassword: {request.data['password']}\n\n"
-        email_message += f"Truy cập trang web {settings.BACKEND_URL}/login\n"
-        email_message += "\n\n*Đây là email từ hệ thống đề nghị không reply."
-        send_mail(
-            email_subject,
-            email_message,
-            settings.DEFAULT_FROM_EMAIL,
-            [employee_email],  
-            fail_silently=False,
-        )
-        return Response({"message": "User created successfully", "data": serializer.data,
+            employee_email = employee.Email
+            employee_name = employee.EmpName
+            email_subject = "Chào mừng đến với WhiteNeuron"
+            email_message = f" Xin chào {employee_name},\n\n"
+            email_message += f" Tài khoản của bạn đã được kích hoạt thành công trong hệ thống.\n"
+            email_message += f"\tUsername: {new_user_id}\n"
+            email_message += f"\tPassword: 123A567a\n\n"  # Đặt mật khẩu mặc định
+            email_message += f"Truy cập trang web {settings.BACKEND_URL}/login\n"
+            email_message += "\n\n*Đây là email từ hệ thống đề nghị không reply."
+
+            send_mail(
+                email_subject,
+                email_message,
+                settings.DEFAULT_FROM_EMAIL,
+                [employee_email],
+                fail_silently=False,
+            )
+            serializer_data = serializer.data
+            serializer_data["UserID"] = user_account.UserID
+        return Response({"message": "Employee and UserAccount created successfully", "data": serializer_data,
                          "status": status.HTTP_201_CREATED},
                         status=status.HTTP_201_CREATED)
+
     return Response({"error": serializer.errors, "status": status.HTTP_400_BAD_REQUEST},
                     status=status.HTTP_400_BAD_REQUEST)
+
 
 
 
@@ -524,7 +521,7 @@ def find_employee(request):
 @permission_classes([IsAdminOrReadOnly])
 def list_employee(request):
     page_index = request.GET.get('pageIndex', 1)
-    page_size = request.GET.get('pageSize', 20)
+    page_size = request.GET.get('pageSize', 10)
     order_by = request.GET.get('sort_by', 'EmpID')  
     search_query = request.GET.get('query', '')
     asc = request.GET.get('asc', 'true').lower() == 'true'  
@@ -615,7 +612,7 @@ def delete_data_if_user_quitte(EmpID):
 @permission_classes([IsAdminOrReadOnly])
 def list_user_password(request):
     page_index = request.GET.get('pageIndex', 1)
-    page_size = request.GET.get('pageSize', 20)
+    page_size = request.GET.get('pageSize', 10)
     order_by = request.GET.get('sort_by', 'UserID')  
     search_query = request.GET.get('query', '')
     asc = request.GET.get('asc', 'true').lower() == 'true'  
