@@ -375,21 +375,40 @@ def create_useraccount(request):
     dep_name = department.DepName
     dep_short_name= department.DepShortName
     position_count = count_employee_department(dep_name)
-    formatted_position_count = f"{position_count :03d}"  
+    formatted_position_count = f"{position_count:03d}"  
     new_user_id = f"{dep_short_name.lower()}{formatted_position_count}"
     if UserAccount.objects.filter(UserID=new_user_id).exists():
         return Response({"error": "User with this UserID already exists",
                          "status": status.HTTP_400_BAD_REQUEST},
                         status=status.HTTP_400_BAD_REQUEST)
     request.data['UserID'] = new_user_id
-    request.data["password"]="12345678"
+    request.data["password"] = "123A567a"
+    
+    employee_email = employee.Email
+    employee_name=employee.EmpName
     if serializer.is_valid():
         serializer.save()
+        
+        email_subject = "Chào mừng đến với WhiteNeuron"
+        email_message = f" Xin chào {employee_name},\n\n"
+
+        email_message += f" Tài khoản của bạn đã được kích hoạt thành công trong hệ thống.\n"
+        email_message += f"\tUsername: {new_user_id}\n"
+        email_message += f"\tPassword: {request.data['password']}\n\n"
+        email_message += f"Truy cập trang web {settings.BACKEND_URL}/login\n"
+        email_message += "\n\n*Đây là email từ hệ thống đề nghị không reply."
+        send_mail(
+            email_subject,
+            email_message,
+            settings.DEFAULT_FROM_EMAIL,
+            [employee_email],  
+            fail_silently=False,
+        )
         return Response({"message": "User created successfully", "data": serializer.data,
                          "status": status.HTTP_201_CREATED},
                         status=status.HTTP_201_CREATED)
-    return Response({"error": serializer.errors,"status":status.HTTP_400_BAD_REQUEST}, status=status.HTTP_400_BAD_REQUEST)
-
+    return Response({"error": serializer.errors, "status": status.HTTP_400_BAD_REQUEST},
+                    status=status.HTTP_400_BAD_REQUEST)
 
 
 
@@ -668,17 +687,15 @@ from django.utils import timezone
 def get_birthday_employee(request):
     today = timezone.now()
     three_days_later = today + timedelta(days=3)
-
     employees = Employee.objects.filter(BirthDate__range=[today.date(), three_days_later.date()])
     number=employees.count()
     employee_data = [
         {
-            
             'EmpName': employee.EmpName,
             "Date of birth":employee.BirthDate.strftime('%d-%m-%Y'),
             'The number of days remaining until the birthday:': (employee.BirthDate - today).days
         }
         for employee in employees
     ]
-
-    return Response({"message":f"{number} people's birthdays approaching","data":employee_data,"status":status.HTTP_200_OK}, status=status.HTTP_200_OK)
+    return Response({"message":f"{number} people's birthdays approaching","data":employee_data,
+                     "status":status.HTTP_200_OK}, status=status.HTTP_200_OK)

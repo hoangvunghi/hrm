@@ -18,12 +18,12 @@ class Employee(models.Model):
     DepID = models.ForeignKey(Department, on_delete=models.DO_NOTHING)
     JobID = models.ForeignKey(Job, on_delete=models.DO_NOTHING)
     EmpStatus = models.BooleanField(default=True)
-    Gender=models.CharField(max_length=12)
+    Gender=models.CharField(max_length=12,null=True)
     RoleID=models.ForeignKey(Role,on_delete=models.SET_NULL,null=True,blank=True)
-    TaxCode=models.CharField(max_length=100)
-    BankAccountNumer=models.CharField(max_length=50)
-    Bank=models.CharField(max_length=100)
-    BankBranch=models.CharField(max_length=100)
+    TaxCode=models.CharField(max_length=100,null=True)
+    BankAccountNumer=models.CharField(max_length=50,null=True)
+    Bank=models.CharField(max_length=100,null=True)
+    BankBranch=models.CharField(max_length=100,null=True)
     
 
 
@@ -63,7 +63,7 @@ class UserAccountManager(BaseUserManager):
 
 class UserAccount(AbstractBaseUser, PermissionsMixin):
     UserID = models.CharField(primary_key=True, max_length=255)
-    EmpID = models.ForeignKey(Employee, on_delete=models.SET_NULL,null=True)
+    EmpID = models.ForeignKey(Employee, on_delete=models.CASCADE)
     objects = UserAccountManager()
     UserStatus = models.BooleanField(default=True)
     is_staff=models.BooleanField(default=False)

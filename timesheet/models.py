@@ -9,4 +9,10 @@ class TimeSheet(models.Model):
     TimeOut = models.DateTimeField(null=True, blank=True)
     EmpID = models.ForeignKey(Employee, on_delete=models.CASCADE)    
     data_dict = models.JSONField(default=dict)
-    
+    # STATUS_CHOICES = [
+    #     ('ontime', 'OnTime'),
+    #     ('late', 'Late'),
+    # ]
+    # TimeStatus=models.CharField(max_length=10,
+    #     choices=STATUS_CHOICES,
+    #     default='ontime',)
