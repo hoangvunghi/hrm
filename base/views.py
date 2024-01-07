@@ -8,6 +8,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate, login
 from .models import Employee,UserAccount
 from job.models import Job
+from role.models import Role
 from department.models import Department
 from timesheet.models import TimeSheet
 from leave.models import LeaveRequest
@@ -344,7 +345,7 @@ UserAccount = get_user_model()
 @permission_classes([permissions.IsAuthenticatedOrReadOnly, IsAdminOrReadOnly])
 def create_employee(request):
     serializer = EmployeeCreateSerializer(data=request.data)
-    required_fields = ['EmpName',"Email","CCCD","DepID","JobID"]
+    required_fields = ['EmpName',"Email","CCCD","DepID","JobID","RoleName"]
     if 'Email'  in request.data and  request.data['Email'] !="":
         new_email = request.data['Email'].lower()
         email_regex = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
@@ -357,6 +358,13 @@ def create_employee(request):
                             status=status.HTTP_400_BAD_REQUEST)
     employee_email = request.data['Email']
     employee_cccd=request.data["CCCD"]
+    role_name = request.data["RoleName"]
+    try:
+        role = Role.objects.get(RoleName=role_name)
+    except Role.DoesNotExist:
+        return Response({"error": f"Role with RoleName {role_name} does not exist",
+                         "status": status.HTTP_400_BAD_REQUEST},
+                        status=status.HTTP_400_BAD_REQUEST)
     if not employee_cccd.isdigit() or 9 != len(employee_cccd) or len(employee_cccd)!=12 :
         return Response({"error": f"cccdmust be a numeric value with 9 or 12 digits",
                          "status": status.HTTP_400_BAD_REQUEST},
@@ -380,6 +388,7 @@ def create_employee(request):
                          "status": status.HTTP_400_BAD_REQUEST},
                         status=status.HTTP_400_BAD_REQUEST)
     if serializer.is_valid():
+        serializer.validated_data['RoleID'] = role.RoleID
         employee = serializer.save()
         emp_id = employee.EmpID
         if not UserAccount.objects.filter(EmpID=emp_id).exists():
