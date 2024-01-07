@@ -50,8 +50,7 @@ def list_role(request):
         "current_page": int(page_index),
         "data": serialized_data,
         "status": status.HTTP_200_OK
-    }, status=status.HTTP_200_OK)
-
+    }, status=status.HTTP_200_OK) 
 
 
 @api_view(['DELETE'])

@@ -8,6 +8,7 @@ from base.permissions import IsAdminOrReadOnly, IsOwnerOrReadonly
 from django.http import Http404
 from base.views import is_valid_type
 from django.core.paginator import Paginator,EmptyPage
+from django.db.models import Q
 
 
 
@@ -33,10 +34,10 @@ def list_department(request):
                         status=status.HTTP_400_BAD_REQUEST)
     if search_query:
         try:
-            em_name = str(search_query)
-            depart = Department.objects.filter(Employee__EmpName__icontains=em_name)
+            dep_name = str(search_query)
+            depart = Department.objects.filter(DepName__icontains=dep_name)
         except ValueError:
-            return Response({"error": "Invalid value for name.",
+            return Response({"error": "Invalid value for department name.",
                              "status": status.HTTP_400_BAD_REQUEST},
                             status=status.HTTP_400_BAD_REQUEST)
     else:
@@ -58,7 +59,26 @@ def list_department(request):
         "data": serialized_data,
         "status": status.HTTP_200_OK
     }, status=status.HTTP_200_OK)
+    
 
+@api_view(["GET"])
+@permission_classes([IsAdminOrReadOnly])
+def query_department(request):
+    search_query = request.GET.get('query', '')
+    departments = Department.objects.filter(
+        Q(DepName__icontains=search_query)
+    ).order_by('DepID')
+
+    serialized_data = []
+
+    for department_data in departments:
+        data = {"id": department_data.DepID, "value": department_data.DepName}
+        serialized_data.append(data)
+
+    return Response({
+        "data": serialized_data,
+        "status": status.HTTP_200_OK,
+    }, status=status.HTTP_200_OK)
 
 
 def validate_to_update(obj, data):

@@ -9,7 +9,7 @@ from base.permissions import IsAdminOrReadOnly, IsOwnerOrReadonly
 from django.http import Http404
 from base.views import is_valid_type,obj_update
 from django.core.paginator import Paginator,EmptyPage
-
+from django.db.models import Q
 
 
 @api_view(["GET"])
@@ -34,10 +34,10 @@ def list_job(request):
                         status=status.HTTP_400_BAD_REQUEST)
     if search_query:
         try:
-            em_name = str(search_query)
-            jobs = Job.objects.filter(Employee__EmpName__icontains=em_name)
+            job_name = str(search_query)
+            jobs = Job.objects.filter(JobName__icontains=job_name)
         except ValueError:
-            return Response({"error": "Invalid value for name.",
+            return Response({"error": "Invalid value for job name.",
                              "status": status.HTTP_400_BAD_REQUEST},
                             status=status.HTTP_400_BAD_REQUEST)
     else:
@@ -70,6 +70,22 @@ def list_job(request):
         "status": status.HTTP_200_OK
     }, status=status.HTTP_200_OK)
 
+@api_view(["GET"])
+@permission_classes([IsAdminOrReadOnly])
+def query_job(request):
+    search_query = request.GET.get('query', '')
+    jobs = Job.objects.filter(JobName__icontains=search_query).order_by('JobID')
+
+    serialized_data = []
+
+    for job_data in jobs:
+        data = {"id": job_data.JobID, "value": job_data.JobName}
+        serialized_data.append(data)
+
+    return Response({
+        "data": serialized_data,
+        "status": status.HTTP_200_OK,
+    }, status=status.HTTP_200_OK)
 
 
 @api_view(['DELETE'])

@@ -622,6 +622,24 @@ def list_employee(request):
     }, status=status.HTTP_200_OK)
 
 
+@api_view(["GET"])
+@permission_classes([IsAdminOrReadOnly])
+def query_employee(request):
+    search_query = request.GET.get('query', '')
+    employees = Employee.objects.filter(
+        Q(EmpName__icontains=search_query)
+    ).order_by('EmpID')
+    serialized_data = []
+
+    for employee_data in employees:
+        data = {"id": employee_data.EmpID, "value": employee_data.EmpName}
+        serialized_data.append(data)
+
+    return Response({
+        "data": serialized_data,
+        "status": status.HTTP_200_OK,
+    }, status=status.HTTP_200_OK)
+
 
 def delete_data_if_user_quitte(EmpID):
     try:
