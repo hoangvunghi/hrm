@@ -344,7 +344,7 @@ UserAccount = get_user_model()
 @permission_classes([permissions.IsAuthenticatedOrReadOnly, IsAdminOrReadOnly])
 def create_employee(request):
     serializer = EmployeeCreateSerializer(data=request.data)
-    required_fields = ['EmpName',"Email"]
+    required_fields = ['EmpName',"Email","CCCD","DepID","JobID"]
     if 'Email'  in request.data and  request.data['Email'] !="":
         new_email = request.data['Email'].lower()
         email_regex = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
@@ -356,8 +356,27 @@ def create_employee(request):
             return Response({"error": f"{field.capitalize()} is required", "status": status.HTTP_400_BAD_REQUEST},
                             status=status.HTTP_400_BAD_REQUEST)
     employee_email = request.data['Email']
+    employee_cccd=request.data["CCCD"]
+    if not employee_cccd.isdigit() or 9 != len(employee_cccd) or len(employee_cccd)!=12 :
+        return Response({"error": f"cccdmust be a numeric value with 9 or 12 digits",
+                         "status": status.HTTP_400_BAD_REQUEST},
+                        status=status.HTTP_400_BAD_REQUEST)
+    if Employee.objects.filter(CCCD=employee_cccd).exists():
+        return Response({"error": "This cccd is already associated with an existing employee",
+                         "status": status.HTTP_400_BAD_REQUEST},
+                        status=status.HTTP_400_BAD_REQUEST)                        
     if Employee.objects.filter(Email=employee_email).exists():
         return Response({"error": "This email is already associated with an existing employee",
+                         "status": status.HTTP_400_BAD_REQUEST},
+                        status=status.HTTP_400_BAD_REQUEST)
+    dep_id = request.data["DepID"]
+    if not Department.objects.filter(DepID=dep_id).exists():
+        return Response({"error": f"Department with DepID {dep_id} does not exist",
+                         "status": status.HTTP_400_BAD_REQUEST},
+                        status=status.HTTP_400_BAD_REQUEST)
+    job_id = request.data["JobID"]
+    if not Job.objects.filter(JobID=job_id).exists():
+        return Response({"error": f"Job with JobID {job_id} does not exist",
                          "status": status.HTTP_400_BAD_REQUEST},
                         status=status.HTTP_400_BAD_REQUEST)
     if serializer.is_valid():
@@ -399,7 +418,8 @@ def create_employee(request):
             )
             serializer_data = serializer.data
             serializer_data["UserID"] = user_account.UserID
-        return Response({"message": "Employee and UserAccount created successfully", "data": serializer_data,
+        return Response({"message": "Employee and UserAccount created successfully. Please check email to get username and password",
+                         "data": serializer_data,
                          "status": status.HTTP_201_CREATED},
                         status=status.HTTP_201_CREATED)
 
