@@ -175,7 +175,8 @@ EMAIL_HOST_USER='test12202023test@gmail.com'
 EMAIL_HOST_PASSWORD='prymsxigzsntalpj'
 EMAIL_USE_TLS=True
 
-
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # #gửi email xác thực bằng djoser
 # DJOSER={
 #     'LOGIN_FIELD':'email',

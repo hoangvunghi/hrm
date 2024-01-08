@@ -13,7 +13,7 @@ class Employee(models.Model):
     HireDate = models.DateField(null=True)
     BirthDate = models.DateField(null=True)
     Address = models.CharField(max_length=255,null=True)
-    PhotoPath = models.CharField(max_length=255,null=True)
+    PhotoPath = models.ImageField(upload_to='employee_photos/', default='employee_photos/default.jpg')
     Email = models.EmailField()
     DepID = models.ForeignKey(Department, on_delete=models.SET_NULL,null=True)
     JobID = models.ForeignKey(Job, on_delete=models.SET_NULL,null=True)
