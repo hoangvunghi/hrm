@@ -21,6 +21,8 @@ class EmployeeSerializer(serializers.ModelSerializer):
         model = Employee
         fields="__all__"
 
+
+
 class EmployeeCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Employee

@@ -30,7 +30,8 @@ from rest_framework.exceptions import ValidationError
 from .serializers import ForgotPasswordSerializer, ResetPasswordSerializer
 from django.core.signing import dumps,loads
 from datetime import datetime,timedelta
-
+import base64
+from django.core.files.base import ContentFile
 
 @api_view(["GET",])
 def a(request):
@@ -392,6 +393,16 @@ def create_employee(request):
         return Response({"error": f"Job with JobID {job_id} does not exist",
                          "status": status.HTTP_400_BAD_REQUEST},
                         status=status.HTTP_400_BAD_REQUEST)
+    base64_image = request.data.get('PhotoPath', '')
+    if base64_image:
+        try:
+            image_data = base64.b64decode(base64_image.split(',')[1])
+            image_file = ContentFile(image_data, name='uploaded_image.jpg')
+            serializer.validated_data['PhotoPath'] = image_file
+        except Exception as e:
+            return Response({"error": "Error decoding base64 image",
+                             "status": status.HTTP_400_BAD_REQUEST},
+                            status=status.HTTP_400_BAD_REQUEST)
     if serializer.is_valid():
         # serializer.validated_data['RoleID'] = role.RoleID
         employee = serializer.save()
@@ -473,10 +484,19 @@ def obj_update(obj, validated_data):
                 setattr(obj, key, job)
             except Job.DoesNotExist:
                 raise ValueError(f"Invalid JobID provided: {value}")
+        elif key == 'PhotoPath':
+            # Xử lý ảnh từ chuỗi base64
+            try:
+                image_data = base64.b64decode(value.split(',')[1])
+                image_file = ContentFile(image_data, name='uploaded_image.jpg')
+                setattr(obj, key, image_file)
+            except Exception as e:
+                raise ValueError("Invalid attempt to update PhotoPath")
         else:
             setattr(obj, key, value)
 
     obj.save()
+    
 def validate_to_update_account(obj, data):
     errors={}
     dict=['UserID', 'EmpID',]
