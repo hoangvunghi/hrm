@@ -571,75 +571,99 @@ def find_employee(request):
                     status=status.HTTP_200_OK)
 
 
-@api_view(["GET"])
-@permission_classes([IsAdminOrReadOnly])
-def list_employee(request):
-    page_index = request.GET.get('pageIndex', 1)
-    page_size = request.GET.get('pageSize', 10)
-    order_by = request.GET.get('sort_by', 'EmpID')  
-    search_query = request.GET.get('query', '')
-    asc = request.GET.get('asc', 'true').lower() == 'true'  
-    order_by = f"{'' if asc else '-'}{order_by}"
-    employees = Employee.objects.filter(
-        Q(EmpName__icontains=search_query)
-    ).order_by(order_by)
-    try:
-        page_size = int(page_size)
-    except ValueError:
-        return Response({"error": "Invalid value for items_per_page. Must be an integer.",
-                         "status": status.HTTP_400_BAD_REQUEST},
-                        status=status.HTTP_400_BAD_REQUEST)
-    allowed_values = [10, 20, 30, 40, 50]
-    if page_size not in allowed_values:
-        return Response({"error": f"Invalid value for items_per_page. Allowed values are: {', '.join(map(str, allowed_values))}.",
-                         "status": status.HTTP_400_BAD_REQUEST},
-                        status=status.HTTP_400_BAD_REQUEST)
-    total_employees = employees.count()
-    paginator = Paginator(employees, page_size)
-    try:
-        current_page_data = paginator.page(page_index)
-    except EmptyPage:
-        return Response({"error": "Page not found",
-                        "status": status.HTTP_404_NOT_FOUND},
-                        status=status.HTTP_404_NOT_FOUND)
+# @api_view(["GET"])
+# @permission_classes([IsAdminOrReadOnly])
+# def list_employee(request):
+#     page_index = request.GET.get('pageIndex', 1)
+#     page_size = request.GET.get('pageSize', 10)
+#     order_by = request.GET.get('sort_by', 'EmpID')  
+#     search_query = request.GET.get('query', '')
+#     asc = request.GET.get('asc', 'true').lower() == 'true'  
+#     order_by = f"{'' if asc else '-'}{order_by}"
+#     # filter_by = request.GET.get('filter_by', None) 
 
-    serialized_data = []
 
-    for employee_data in current_page_data.object_list:
-        serializer = EmployeeSerializer(employee_data)
-        data = serializer.data
-        emp_id = data["EmpID"]
-        try:
-            user = UserAccount.objects.get(EmpID=emp_id)
-            username = UserAccount.objects.get(EmpID=emp_id).UserID
-            pass_word=user.get_password()
-            data["UserID"] = username
-            data["password"]=pass_word
-        except UserAccount.DoesNotExist:
-            data["UserID"] = None
-            data["password"]=None
-        job_id = data["JobID"]
-        try:
-            job_name = Job.objects.get(JobID=job_id).JobName
-            data["JobName"] = job_name
-        except Job.DoesNotExist:
-            data["JobName"] = None
+#     if 'filter_by' in request.GET and request.GET['filter_by']:
+#         filter_by = request.GET['filter_by']
+#     else:
+#         filter_by = 'EmpName'  
+#     filter_mapping = {
+#         'EmpName': 'EmpName__icontains',
+#         'DepName': 'DepID__DepName__icontains',
+#         'JobName': 'JobID__JobName__icontains',
+#         'RoleName':'RoleID__RoleName__icontains',
+#     }
+
+#     filter_conditions = Q(**{filter_mapping[filter_by]: search_query})
+
+#     employees = Employee.objects.filter(filter_conditions).order_by(order_by)
+
+#     # employees = Employee.objects.filter(
+#     #     Q(EmpName__icontains=search_query)
+#     # ).order_by(order_by)
+#     try:
+#         page_size = int(page_size)
+#     except ValueError:
+#         return Response({"error": "Invalid value for items_per_page. Must be an integer.",
+#                          "status": status.HTTP_400_BAD_REQUEST},
+#                         status=status.HTTP_400_BAD_REQUEST)
+#     allowed_values = [10, 20, 30, 40, 50]
+#     if page_size not in allowed_values:
+#         return Response({"error": f"Invalid value for items_per_page. Allowed values are: {', '.join(map(str, allowed_values))}.",
+#                          "status": status.HTTP_400_BAD_REQUEST},
+#                         status=status.HTTP_400_BAD_REQUEST)
+#     total_employees = employees.count()
+#     paginator = Paginator(employees, page_size)
+#     try:
+#         current_page_data = paginator.page(page_index)
+#     except EmptyPage:
+#         return Response({"error": "Page not found",
+#                         "status": status.HTTP_404_NOT_FOUND},
+#                         status=status.HTTP_404_NOT_FOUND)
+
+#     serialized_data = []
+
+#     for employee_data in current_page_data.object_list:
+#         serializer = EmployeeSerializer(employee_data)
+#         data = serializer.data
+#         emp_id = data["EmpID"]
+#         try:
+#             user = UserAccount.objects.get(EmpID=emp_id)
+#             username = UserAccount.objects.get(EmpID=emp_id).UserID
+#             pass_word=user.get_password()
+#             data["UserID"] = username
+#             data["password"]=pass_word
+#         except UserAccount.DoesNotExist:
+#             data["UserID"] = None
+#             data["password"]=None
+#         job_id = data["JobID"]
+#         try:
+#             job_name = Job.objects.get(JobID=job_id).JobName
+#             data["JobName"] = job_name
+#         except Job.DoesNotExist:
+#             data["JobName"] = None
         
-        dep_id = data["DepID"]
-        try:
-            dep_name = Department.objects.get(DepID=dep_id).DepName
+#         dep_id = data["DepID"]
+#         try:
+#             dep_name = Department.objects.get(DepID=dep_id).DepName
 
-            data["DepName"] = dep_name
-        except Department.DoesNotExist:
-            data["DepName"] = None
+#             data["DepName"] = dep_name
+#         except Department.DoesNotExist:
+#             data["DepName"] = None
 
-        serialized_data.append(data)
-    return Response({
-        "total_rows": total_employees,
-        "current_page": int(page_index),
-        "data": serialized_data,
-        "status": status.HTTP_200_OK,
-    }, status=status.HTTP_200_OK)
+#         role_id=data["RoleID"]
+#         try:
+#             role_name=Role.objects.get(RoleID=role_id).RoleName
+#             data["RoleName"]=role_name
+#         except Role.DoesNotExist:
+#             data["RoleName"]=None
+#         serialized_data.append(data)
+#     return Response({
+#         "total_rows": total_employees,
+#         "current_page": int(page_index),
+#         "data": serialized_data,
+#         "status": status.HTTP_200_OK,
+#     }, status=status.HTTP_200_OK)
 
 
 @api_view(["GET"])
@@ -660,6 +684,114 @@ def query_employee(request):
         "status": status.HTTP_200_OK,
     }, status=status.HTTP_200_OK)
 
+
+@api_view(["GET"])
+@permission_classes([IsAdminOrReadOnly])
+def list_employee(request):
+    page_index = request.GET.get('pageIndex', 1)
+    page_size = request.GET.get('pageSize', 10)
+    order_by = request.GET.get('sort_by', 'EmpID')  
+    search_query = request.GET.get('query', '')
+    asc = request.GET.get('asc', 'true').lower() == 'true'  
+    order_by = f"{'' if asc else '-'}{order_by}"
+
+    employees = Employee.objects.filter(
+        Q(EmpName__icontains=search_query)
+    )
+    gender_filter = request.GET.get('Gender', None)
+
+    if gender_filter:
+        gender_values = gender_filter.split(',')
+        gender_q_objects = Q()
+        for gender_value in gender_values:
+            gender_q_objects |= Q(Gender__iexact=gender_value.strip())
+        employees = employees.filter(gender_q_objects)
+    dep_name_filter = request.GET.get('DepName', None)
+    if dep_name_filter:
+        dep_name_values = dep_name_filter.split(',')
+        dep_name_q_objects = Q()
+        for dep_name_value in dep_name_values:
+            dep_name_q_objects |= Q(DepID__DepName__iexact=dep_name_value.strip())
+        employees = employees.filter(dep_name_q_objects)
+    job_name_filter = request.GET.get('JobName', None)
+    if job_name_filter:
+        job_name_values = job_name_filter.split(',')
+        job_name_q_objects = Q()
+        for job_name_value in job_name_values:
+            job_name_q_objects |= Q(JobID__JobName__iexact=job_name_value.strip())
+        employees = employees.filter(job_name_q_objects)
+
+    employees = employees.order_by(order_by)
+
+    try:
+        page_size = int(page_size)
+    except ValueError:
+        return Response({"error": "Invalid value for items_per_page. Must be an integer.",
+                         "status": status.HTTP_400_BAD_REQUEST},
+                        status=status.HTTP_400_BAD_REQUEST)
+
+    allowed_values = [10, 20, 30, 40, 50]
+    if page_size not in allowed_values:
+        return Response({"error": f"Invalid value for items_per_page. Allowed values are: {', '.join(map(str, allowed_values))}.",
+                         "status": status.HTTP_400_BAD_REQUEST},
+                        status=status.HTTP_400_BAD_REQUEST)
+
+    total_employees = employees.count()
+    paginator = Paginator(employees, page_size)
+
+    try:
+        current_page_data = paginator.page(page_index)
+    except EmptyPage:
+        return Response({"error": "Page not found",
+                        "status": status.HTTP_404_NOT_FOUND},
+                        status=status.HTTP_404_NOT_FOUND)
+
+    serialized_data = []
+
+    for employee_data in current_page_data.object_list:
+        serializer = EmployeeSerializer(employee_data)
+        data = serializer.data
+        emp_id = data["EmpID"]
+
+        try:
+            user = UserAccount.objects.get(EmpID=emp_id)
+            username = UserAccount.objects.get(EmpID=emp_id).UserID
+            pass_word = user.get_password()
+            data["UserID"] = username
+            data["password"] = pass_word
+        except UserAccount.DoesNotExist:
+            data["UserID"] = None
+            data["password"] = None
+
+        job_id = data["JobID"]
+        try:
+            job_name = Job.objects.get(JobID=job_id).JobName
+            data["JobName"] = job_name
+        except Job.DoesNotExist:
+            data["JobName"] = None
+
+        dep_id = data["DepID"]
+        try:
+            dep_name = Department.objects.get(DepID=dep_id).DepName
+            data["DepName"] = dep_name
+        except Department.DoesNotExist:
+            data["DepName"] = None
+
+        role_id = data["RoleID"]
+        try:
+            role_name = Role.objects.get(RoleID=role_id).RoleName
+            data["RoleName"] = role_name
+        except Role.DoesNotExist:
+            data["RoleName"] = None
+
+        serialized_data.append(data)
+
+    return Response({
+        "total_rows": total_employees,
+        "current_page": int(page_index),
+        "data": serialized_data,
+        "status": status.HTTP_200_OK,
+    }, status=status.HTTP_200_OK)
 
 def delete_data_if_user_quitte(EmpID):
     try:

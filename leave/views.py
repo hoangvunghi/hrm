@@ -64,6 +64,71 @@ def list_leave(request):
         "status": status.HTTP_200_OK
     }, status=status.HTTP_200_OK)
 
+# @api_view(["GET"])
+# @permission_classes([IsAdminOrReadOnly])  
+# def list_leave(request):
+#     page_index = request.GET.get('pageIndex', 1)
+#     page_size = request.GET.get('pageSize', 10)
+#     order_by = request.GET.get('sort_by', 'LeaveRequestID')
+#     search_query = request.GET.get('query', '')
+#     asc = request.GET.get('asc', 'true').lower() == 'true'  
+#     order_by = f"{'' if asc else '-'}{order_by}"
+#     if 'filter_by' in request.GET and request.GET['filter_by']:
+#         filter_by = request.GET['filter_by']
+#     else:
+#         filter_by = 'EmpID'  
+#     filter_mapping = {
+#         'EmpID':'EmpID__icontains',
+#         'EmpName': 'EmpID__EmpName__icontains',
+#         'LeaveTypeID':"LeaveTypeiD__icontains",
+#         'LeaveTypeName':"LeaveTypeID__LeaveTypeName__icontains",
+#     }
+
+#     filter_conditions = Q(**{filter_mapping[filter_by]: search_query})
+#     leav = LeaveRequest.objects.filter(filter_conditions).order_by(order_by)
+#     try:
+#         page_size = int(page_size)
+#     except ValueError:
+#         return Response({"error": "Invalid value for items_per_page. Must be an integer.",
+#                          "status": status.HTTP_400_BAD_REQUEST},
+#                         status=status.HTTP_400_BAD_REQUEST)
+#     allowed_values = [10, 20, 30, 40, 50]
+#     if page_size not in allowed_values:
+#         return Response({"error": f"Invalid value for items_per_page. Allowed values are: {', '.join(map(str, allowed_values))}.",
+#                          "status": status.HTTP_400_BAD_REQUEST},
+#                         status=status.HTTP_400_BAD_REQUEST)
+#     # if search_query:
+#     #     try:
+#     #         em_name = str(search_query)
+#     #         users = Employee.objects.filter(EmpName__icontains=em_name)
+#     #         leav = LeaveRequest.objects.filter(EmpID__in=users)
+#     #     except ValueError:
+#     #         return Response({"error": "Invalid value for name.",
+#     #                          "status": status.HTTP_400_BAD_REQUEST},
+#     #                         status=status.HTTP_400_BAD_REQUEST)
+#     # else:
+#     #     leav = LeaveRequest.objects.all()
+#     # leav = leav.order_by(order_by)
+#     paginator = Paginator(leav, page_size)
+#     try:
+#         current_page_data = paginator.page(page_index)
+#     except EmptyPage:
+#         return Response({"error": "Page not found",
+#                          "status": status.HTTP_404_NOT_FOUND},
+#                         status=status.HTTP_404_NOT_FOUND)
+#     serialized_data = []
+#     for leave_instance in current_page_data.object_list:
+#         user_account_data = EmployeeWithLeaveSerializer(leave_instance.EmpID).data
+#         leave_data = LeaveWithEmployeeSerializer(leave_instance).data
+#         combined_data = {**user_account_data, **leave_data}
+#         serialized_data.append(combined_data)
+#     return Response({
+#         "total_rows": leav.count(),
+#         "current_page": int(page_index),
+#         "data": serialized_data,
+#         "status": status.HTTP_200_OK
+#     }, status=status.HTTP_200_OK)
+
 @api_view(["GET"])
 @permission_classes([IsOwnerOrReadonly])  
 def list_leave_nv(request):

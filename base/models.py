@@ -24,7 +24,6 @@ class Employee(models.Model):
     CCCD=models.CharField(max_length=12)
     BankAccountNumer=models.CharField(max_length=50,null=True)
     BankName=models.CharField(max_length=100,null=True)
-    # BankBranch=models.CharField(max_length=100,null=True)
     
 
 
