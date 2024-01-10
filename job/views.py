@@ -14,7 +14,12 @@ from django.db.models import Q
 @api_view(["GET"])
 @permission_classes([IsAdminOrReadOnly])
 def list_job(request):
-    page_index = request.GET.get('pageIndex', 1)
+    page_index = int(request.GET.get('pageIndex', 1))
+    
+    if page_index >= 0:
+        page_index += 1
+    if page_index < 0:
+        page_index=1
     page_size = request.GET.get('pageSize', 10)
     order_by = request.GET.get('sort_by', 'JobID')
     search_query = request.GET.get('query', '')
@@ -86,73 +91,6 @@ def list_job(request):
         "status": status.HTTP_200_OK
     }, status=status.HTTP_200_OK)
 
-# @api_view(["GET"])
-# @permission_classes([IsAdminOrReadOnly])
-# def list_job(request):
-#     page_index = request.GET.get('pageIndex', 1)
-#     page_size = request.GET.get('pageSize', 10)
-#     order_by = request.GET.get('sort_by', 'JobID')
-#     search_query = request.GET.get('query', '')
-#     asc = request.GET.get('asc', 'true').lower() == 'true'
-#     order_by = f"{'' if asc else '-'}{order_by}"
-#     if 'filter_by' in request.GET and request.GET['filter_by']:
-#         filter_by = request.GET['filter_by']
-#     else:
-#         filter_by = 'JobName'  
-#     filter_mapping = {
-#         'DepName': 'DepID__DepName__icontains',
-#         'JobName': 'JobName__icontains',
-#     }
-#     filter_conditions = Q(**{filter_mapping[filter_by]: search_query})
-#     jobs = Job.objects.filter(filter_conditions).order_by(order_by)
-#     try:
-#         page_size = int(page_size)
-#     except ValueError:
-#         return Response({"error": "Invalid value for items_per_page. Must be an integer.",
-#                          "status": status.HTTP_400_BAD_REQUEST},
-#                         status=status.HTTP_400_BAD_REQUEST)
-#     allowed_values = [10, 20, 30, 40, 50]
-#     if page_size not in allowed_values:
-#         return Response({"error": f"Invalid value for items_per_page. Allowed values are: {', '.join(map(str, allowed_values))}.",
-#                          "status": status.HTTP_400_BAD_REQUEST},
-#                         status=status.HTTP_400_BAD_REQUEST)
-#     # if search_query:
-#     #     try:
-#     #         job_name = str(search_query)
-#     #         jobs = Job.objects.filter(JobName__icontains=job_name)
-#     #     except ValueError:
-#     #         return Response({"error": "Invalid value for job name.",
-#     #                          "status": status.HTTP_400_BAD_REQUEST},
-#     #                         status=status.HTTP_400_BAD_REQUEST)
-#     # else:
-#     #     jobs = Job.objects.all()
-#     # jobs = jobs.order_by(order_by)
-#     paginator = Paginator(jobs, page_size)
-#     try:
-#         current_page_data = paginator.page(page_index)
-#     except EmptyPage:
-#         return Response({"error": "Page not found",
-#                          "status": status.HTTP_404_NOT_FOUND},
-#                         status=status.HTTP_404_NOT_FOUND)
-#     serialized_data = []
-#     for job_instance in current_page_data.object_list:
-#         serializer = JobSerializer(job_instance)
-#         data = serializer.data
-        
-#         dep_id = data["DepID"]
-#         try:
-#             dep_name = Department.objects.get(DepID=dep_id).DepName
-#             data["DepName"] = dep_name
-#         except Department.DoesNotExist:
-#             data["DepName"] = None
-
-#         serialized_data.append(data)    
-#     return Response({
-#         "total_rows": jobs.count(),
-#         "current_page": int(page_index),
-#         "data": serialized_data,
-#         "status": status.HTTP_200_OK
-#     }, status=status.HTTP_200_OK)
 
 @api_view(["GET"])
 @permission_classes([IsAdminOrReadOnly])

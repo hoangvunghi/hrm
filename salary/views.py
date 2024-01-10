@@ -13,7 +13,12 @@ from django.core.paginator import Paginator,EmptyPage
 @api_view(["GET"])
 @permission_classes([IsAdminOrReadOnly])
 def list_salary(request):
-    page_index = request.GET.get('pageIndex', 1)
+    page_index = int(request.GET.get('pageIndex', 1))
+    
+    if page_index >= 0:
+        page_index += 1
+    if page_index < 0:
+        page_index=1
     page_size = request.GET.get('pageSize', 10)
     total_salary = SalaryHistory.objects.count()
     order_by = request.GET.get('sort_by', 'EmpID')
