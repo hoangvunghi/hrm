@@ -595,7 +595,12 @@ def query_employee(request):
 @api_view(["GET"])
 @permission_classes([IsAdminOrReadOnly])
 def list_employee(request):
-    page_index = int(request.GET.get('pageIndex', 1))
+    try:
+        page_index = int(request.GET.get('pageIndex', 1))
+    except ValueError:
+        return Response({"error": "Invalid value for items_per_page. Must be an integer.",
+                         "status": status.HTTP_400_BAD_REQUEST},
+                        status=status.HTTP_400_BAD_REQUEST)
     
     if page_index >= 0:
         page_index += 1
@@ -729,7 +734,12 @@ def delete_data_if_user_quitte(EmpID):
 @api_view(["GET"])
 @permission_classes([IsAdminOrReadOnly])
 def list_user_password(request):
-    page_index = int(request.GET.get('pageIndex', 1))
+    try:
+        page_index = int(request.GET.get('pageIndex', 1))
+    except ValueError:
+        return Response({"error": "Invalid value for items_per_page. Must be an integer.",
+                         "status": status.HTTP_400_BAD_REQUEST},
+                        status=status.HTTP_400_BAD_REQUEST)
     
     if page_index >= 0:
         page_index += 1
