@@ -15,12 +15,7 @@ from leave_type.models import LeaveType
 @api_view(["GET"])
 @permission_classes([IsAdminOrReadOnly])  
 def list_leave(request):
-    page_index = int(request.GET.get('pageIndex', 1))
-    
-    if page_index >= 0:
-        page_index += 1
-    if page_index < 0:
-        page_index=1
+    page_index = request.GET.get('pageIndex', 1)
     page_size = request.GET.get('pageSize', 10)
     order_by = request.GET.get('sort_by', 'LeaveRequestID')
     search_query = request.GET.get('query', '')
@@ -72,22 +67,18 @@ def list_leave(request):
 @api_view(["GET"])
 @permission_classes([IsOwnerOrReadonly])  
 def list_leave_nv(request):
-    try:
-        page_index = int(request.GET.get('pageIndex', 1))
-    except ValueError:
-        return Response({"error": "Invalid value for items_per_page. Must be an integer.",
-                         "status": status.HTTP_400_BAD_REQUEST},
-                        status=status.HTTP_400_BAD_REQUEST)
-    if page_index >= 0:
-        page_index += 1
-    if page_index < 0:
-        page_index=1
+    page_index = request.GET.get('pageIndex', 1)
     page_size = request.GET.get('pageSize', 10)
     order_by = request.GET.get('sort_by', 'LeaveRequestID')
     asc = request.GET.get('asc', 'true').lower() == 'true'  
     order_by = f"{'' if asc else '-'}{order_by}"
     
-
+    try:
+        page_size = int(page_size)
+    except ValueError:
+        return Response({"error": "Invalid value for items_per_page. Must be an integer.",
+                         "status": status.HTTP_400_BAD_REQUEST},
+                        status=status.HTTP_400_BAD_REQUEST)
     allowed_values = [10, 20, 30, 40, 50]
     if page_size not in allowed_values:
         return Response({"error": f"Invalid value for items_per_page. Allowed values are: {', '.join(map(str, allowed_values))}.",

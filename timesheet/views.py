@@ -15,16 +15,7 @@ from datetime import timedelta
 @api_view(["GET"])
 @permission_classes([IsAdminOrReadOnly])
 def list_timesheet(request):
-    try:
-        page_index = int(request.GET.get('pageIndex', 1))
-    except ValueError:
-        return Response({"error": "Invalid value for items_per_page. Must be an integer.",
-                         "status": status.HTTP_400_BAD_REQUEST},
-                        status=status.HTTP_400_BAD_REQUEST)    
-    if page_index >= 0:
-        page_index += 1
-    if page_index < 0:
-        page_index=1
+    page_index = request.GET.get('pageIndex', 1) 
     page_size = request.GET.get('pageSize', 10) 
     total_attendance = TimeSheet.objects.count()
     order_by = request.GET.get('sort-by', 'TimeID')
@@ -125,16 +116,7 @@ def delete_timesheet(request, pk):
 @api_view(["GET"])
 @permission_classes([IsOwnerOrReadonly])
 def list_timesheet_nv(request):
-    try:
-        page_index = int(request.GET.get('pageIndex', 1))
-    except ValueError:
-        return Response({"error": "Invalid value for items_per_page. Must be an integer.",
-                         "status": status.HTTP_400_BAD_REQUEST},
-                        status=status.HTTP_400_BAD_REQUEST)    
-    if page_index >= 0:
-        page_index += 1
-    if page_index < 0:
-        page_index=1
+    page_index = request.GET.get('pageIndex', 1)
     page_size = request.GET.get('pageSize', 10)
     order_by = request.GET.get('sort_by', 'TimeID')
     asc = request.GET.get('asc', 'true').lower() == 'true'
