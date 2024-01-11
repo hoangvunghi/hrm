@@ -117,7 +117,7 @@ def delete_job(request, pk):
         if position.JobID is not None:
             position.delete()
             return Response({"message": "Job deleted successfully",
-                             "status":status.HTTP_204_NO_CONTENT}, status=status.HTTP_204_NO_CONTENT)
+                             "status":status.HTTP_200_OK}, status=status.HTTP_200_OK)
         else:
             return Response({"error": "Invalid JobID","status":status.HTTP_400_BAD_REQUEST
                              }, status=status.HTTP_400_BAD_REQUEST)

@@ -281,8 +281,8 @@ def delete_account(request, pk):
 
         account.delete()
         return Response({"message": "Employee deleted successfully",
-                         "status":status.HTTP_204_NO_CONTENT}, 
-                        status=status.HTTP_204_NO_CONTENT)
+                         "status":status.HTTP_200_OK}, 
+                        status=status.HTTP_200_OK)
 
 
 @api_view(['DELETE'])
@@ -302,8 +302,8 @@ def delete_employee(request, pk):
         Job.objects.filter(EmpID=pk).delete()
         Department.objects.filter(EmpID=pk).delete()
         return Response({"message": "Employee deleted successfully",
-                         "status":status.HTTP_204_NO_CONTENT}, 
-                        status=status.HTTP_204_NO_CONTENT)
+                         "status":status.HTTP_200_OK}, 
+                        status=status.HTTP_200_OK)
 
 
 
@@ -364,13 +364,6 @@ def create_employee(request):
         return Response({"error": f"Role with RoleID {employee_role} does not exist",
                          "status": status.HTTP_400_BAD_REQUEST},
                         status=status.HTTP_400_BAD_REQUEST)
-    # role_name = request.data["RoleName"]
-    # try:
-    #     role = Role.objects.get(RoleName=role_name)
-    # except Role.DoesNotExist:
-    #     return Response({"error": f"Role with RoleName {role_name} does not exist",
-    #                      "status": status.HTTP_400_BAD_REQUEST},
-    #                     status=status.HTTP_400_BAD_REQUEST)
     if not employee_cccd.isdigit() or 9 != len(employee_cccd) or len(employee_cccd)!=12 :
         return Response({"error": f"cccdmust be a numeric value with 9 or 12 digits",
                          "status": status.HTTP_400_BAD_REQUEST},
@@ -485,7 +478,6 @@ def obj_update(obj, validated_data):
             except Job.DoesNotExist:
                 raise ValueError(f"Invalid JobID provided: {value}")
         elif key == 'PhotoPath':
-            # Xử lý ảnh từ chuỗi base64
             try:
                 image_data = base64.b64decode(value.split(',')[1])
                 image_file = ContentFile(image_data, name='uploaded_image.jpg')
@@ -710,7 +702,7 @@ def delete_data_if_user_quitte(EmpID):
                             ,status=status.HTTP_200_OK)
         else:
             return Response(f"No data deletion. User {user.email} has a status other than 'quitte'",
-                            status=status.HTTP_204_NO_CONTENT)
+                            status=status.HTTP_200_OK)
     except Employee.DoesNotExist:
         return Response(f"User with ID {EmpID} does not exist.",
                         status=status.HTTP_400_BAD_REQUEST)

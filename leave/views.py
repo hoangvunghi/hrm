@@ -138,8 +138,8 @@ def delete_leave(request, pk):
         if leave.LeaveRequestID is not None:
             leave.delete()
             return Response({"message": "Leave deleted successfully", 
-                             "status": status.HTTP_204_NO_CONTENT},
-                            status=status.HTTP_204_NO_CONTENT)
+                             "status": status.HTTP_200_OK},
+                            status=status.HTTP_200_OK)
         else:
             return Response({"error": "Invalid LeaveID", 
                              "status": status.HTTP_400_BAD_REQUEST}, 

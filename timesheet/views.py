@@ -66,23 +66,23 @@ def list_timesheet(request):
 
 
 
-@api_view(['DELETE'])
-@permission_classes([permissions.IsAuthenticatedOrReadOnly, IsAdminOrReadOnly])
-def delete_timesheet(request, pk):
-    try:
-        timesheet = TimeSheet.objects.get(TimeID=pk)
-    except TimeSheet.DoesNotExist:
-        return Response({"error": "Time sheet not found",
-                         "status":status.HTTP_404_NOT_FOUND}, status=status.HTTP_404_NOT_FOUND)
+# @api_view(['DELETE'])
+# @permission_classes([permissions.IsAuthenticatedOrReadOnly, IsAdminOrReadOnly])
+# def delete_timesheet(request, pk):
+#     try:
+#         timesheet = TimeSheet.objects.get(TimeID=pk)
+#     except TimeSheet.DoesNotExist:
+#         return Response({"error": "Time sheet not found",
+#                          "status":status.HTTP_404_NOT_FOUND}, status=status.HTTP_404_NOT_FOUND)
 
-    if request.method == 'DELETE':
-        if timesheet.TimeID is not None:
-            timesheet.delete()
-            return Response({"message": "Time sheet deleted successfully",
-                             "status":status.HTTP_204_NO_CONTENT}, status=status.HTTP_204_NO_CONTENT)
-        else:
-            return Response({"error": "Invalid TimeID",
-                             "status":status.HTTP_400_BAD_REQUEST}, status=status.HTTP_400_BAD_REQUEST)
+#     if request.method == 'DELETE':
+#         if timesheet.TimeID is not None:
+#             timesheet.delete()
+#             return Response({"message": "Time sheet deleted successfully",
+#                              "status":status.HTTP_200_OK}, status=status.HTTP_200_OK)
+#         else:
+#             return Response({"error": "Invalid TimeID",
+#                              "status":status.HTTP_400_BAD_REQUEST}, status=status.HTTP_400_BAD_REQUEST)
 
 
 # # Đã test 
