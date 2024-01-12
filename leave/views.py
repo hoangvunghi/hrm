@@ -173,6 +173,16 @@ def create_leave(request):
         return Response({"error": "Exceeds the allowed leave limit for the year",
                          "status": status.HTTP_400_BAD_REQUEST},
                         status=status.HTTP_400_BAD_REQUEST)
+    date_fields = ['LeaveStartDate', 'LeaveEndDate']
+    for key in date_fields:
+        if key in request.data and request.data[key]:
+            try:
+                day, month, year = map(int, request.data[key].split('/'))
+                request.data[key] = f"{year:04d}-{month:02d}-{day:02d}"
+            except (ValueError, IndexError):
+                return Response({"error": f"Invalid date format for {key}. It must be in dd/mm/yyyy format.",
+                                 "status": status.HTTP_400_BAD_REQUEST},
+                                status=status.HTTP_400_BAD_REQUEST)
     request.data['Duration'] = requested_days
     serializer = LeaveSerializer(data=request.data)
     required_fields = ["LeaveTypeID", "LeaveStartDate", "LeaveEndDate", "Reason"]
@@ -211,6 +221,13 @@ def create_leave(request):
 def validate_to_update(obj, data):
     errors={}
     dict=['LeaveRequestID', 'EmpID']
+    date_fields = ['LeaveStartDate', 'LeaveEndDate']
+    if key in date_fields:
+            try:
+                day, month, year = map(int, value.split('/'))
+                data[key] = f"{year:04d}-{month:02d}-{day:02d}"
+            except (ValueError, IndexError):
+                errors[key] = f"Invalid date format for {key}. It must be in dd/mm/yyyy format." 
     for key in data:
         value= data[key]
         if key in dict:

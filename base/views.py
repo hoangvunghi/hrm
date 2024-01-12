@@ -357,6 +357,17 @@ def create_employee(request):
         if not request.data.get(field):
             return Response({"error": f"{field.capitalize()} is required", "status": status.HTTP_400_BAD_REQUEST},
                             status=status.HTTP_400_BAD_REQUEST)
+    date_fields = ['HireDate', 'BirthDate']
+    for key in date_fields:
+        if key in request.data and request.data[key]:
+            try:
+                day, month, year = map(int, request.data[key].split('/'))
+                request.data[key] = f"{year:04d}-{month:02d}-{day:02d}"
+            except (ValueError, IndexError):
+                return Response({"error": f"Invalid date format for {key}. It must be in dd/mm/yyyy format.",
+                                 "status": status.HTTP_400_BAD_REQUEST},
+                                status=status.HTTP_400_BAD_REQUEST)
+
     employee_email = request.data['Email']
     employee_cccd=request.data["CCCD"]
     employee_role=request.data["RoleID"]
@@ -449,6 +460,7 @@ def create_employee(request):
 
 def validate_to_update(obj, data):
     errors={}
+    date_fields = ['HireDate', 'BirthDate']
     dict=['UserID', 'EmpID',"SalFrom"]
     for key in data:
         value= data[key]
@@ -459,7 +471,13 @@ def validate_to_update(obj, data):
                 sal_amount = float(value)
             except ValueError:
                 errors[key]= f"amount must be float"     
-           
+        if key in date_fields:
+            try:
+                # Chuyển đổi định dạng ngày/tháng/năm thành năm-tháng-ngày
+                day, month, year = map(int, value.split('/'))
+                data[key] = f"{year:04d}-{month:02d}-{day:02d}"
+            except (ValueError, IndexError):
+                errors[key] = f"Invalid date format for {key}. It must be in dd/mm/yyyy format."   
     return errors 
 
 def obj_update(obj, validated_data):
