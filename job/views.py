@@ -91,7 +91,14 @@ def list_job(request):
 @permission_classes([IsAdminOrReadOnly])
 def query_job(request):
     search_query = request.GET.get('query', '')
-    jobs = Job.objects.filter(JobName__icontains=search_query).order_by('JobID')
+    dep_name = request.GET.get('DepName', '')  
+
+    jobs = Job.objects.filter(JobName__icontains=search_query)
+
+    if dep_name:
+        jobs = jobs.filter(DepID__DepName__icontains=dep_name)
+
+    jobs = jobs.order_by('JobID')
 
     serialized_data = []
 
