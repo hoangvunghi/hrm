@@ -10,17 +10,84 @@ from department.models import Department
 from job.models import Job
 from role.models import Role
 
-admin.site.register(LeaveType)
-admin.site.register(LeaveRequest)
+# admin.site.register(LeaveType)
 admin.site.register(SalaryHistory)
-admin.site.register(UserAccount)
-admin.site.register(Job)
-admin.site.register(Department)
-admin.site.register(TimeSheet)
-admin.site.register(Role)
+# admin.site.register(UserAccount)
+# admin.site.register(Job)
 
+# admin.site.register(TimeSheet)
+admin.site.register(Role)
 
 class UserAccountAdmin(admin.ModelAdmin):
     list_display = ["EmpID"]
 
-admin.site.register(Employee, UserAccountAdmin)
+admin.site.register(UserAccount, UserAccountAdmin)
+
+class TimeSheetInline(admin.TabularInline):
+    model = TimeSheet
+class EmployeeAdmin(admin.ModelAdmin):
+    inlines = [TimeSheetInline]
+    list_display = ["EmpName", "get_dep_name",]
+    raw_id_fields = ["DepID", "JobID","RoleID"]
+    # list_editable = ["EmpStatus"]
+    # fieldsets = [
+    #     ('Main Information', {
+    #         'fields': ['EmpName', 'Phone', 'HireDate', 'BirthDate', 'Address', 'PhotoPath', 'Email', 'Gender', 'RoleID', 'TaxCode', 'CCCD', 'BankAccountNumer', 'BankName', 'EmpStatus','DepID', 'JobID'],
+    #     }),
+    #     ('Department and Job Information', {
+    #         'fields': [],
+    #         'classes': ['collapse'],
+    #     }),
+    # ]
+
+    def get_dep_name(self, obj):
+        return obj.DepID.DepName if obj.DepID else ''
+
+    get_dep_name.short_description = 'Department Name'
+
+admin.site.register(Employee, EmployeeAdmin)
+
+
+class DepartmentAdmin(admin.ModelAdmin):
+    list_display = ["DepID", "DepName",]
+    raw_id_fields = ["ManageID",]
+
+admin.site.register(Department, DepartmentAdmin)
+
+class JobAdmin(admin.ModelAdmin):
+    list_display = ["JobID", "JobName",]
+    raw_id_fields = ["DepID",]
+
+admin.site.register(Job, JobAdmin)
+
+
+
+class LeaveAdmin(admin.ModelAdmin):
+    list_display = ["get_name", "LeaveStatus", "LeaveTypeID", "LeaveStartDate", "LeaveEndDate"]
+    raw_id_fields = ["LeaveTypeID"]
+
+    def get_name(self, obj):
+        return obj.EmpID.EmpName if obj.EmpID else ''
+
+    get_name.short_description = 'Employee Name'
+
+admin.site.register(LeaveRequest, LeaveAdmin)
+
+class LeaveTypeAdmin(admin.ModelAdmin):
+    list_display=["LeaveTypeID","LeaveTypeName"]
+admin.site.register(LeaveType,LeaveTypeAdmin)
+
+
+
+
+
+class TimeAdmin(admin.ModelAdmin):
+    list_display = ["get_name", "TimeIn", "TimeOut","TimeStatus",]
+    raw_id_fields = ["EmpID"]
+
+    def get_name(self, obj):
+        return obj.EmpID.EmpName if obj.EmpID else ''
+
+    get_name.short_description = "Employee Name"
+
+admin.site.register(TimeSheet, TimeAdmin)

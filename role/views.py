@@ -8,6 +8,7 @@ from base.permissions import IsAdminOrReadOnly, IsOwnerOrReadonly
 from django.http import Http404
 from base.views import is_valid_type,obj_update
 from django.core.paginator import Paginator,EmptyPage
+from django.db.models import Q
 
 
 
@@ -51,6 +52,25 @@ def list_role(request):
         "data": serialized_data,
         "status": status.HTTP_200_OK
     }, status=status.HTTP_200_OK) 
+
+
+@api_view(["GET"])
+@permission_classes([IsAdminOrReadOnly])
+def query_role(request):
+    search_query = request.GET.get('query', '')
+    role = Role.objects.filter(
+        Q(RoleName__icontains=search_query)
+    ).order_by('RoleID')
+    serialized_data = []
+
+    for role_data in role:
+        data = {"id": role_data.RoleID, "value": role_data.RoleName}
+        serialized_data.append(data)
+
+    return Response({
+        "data": serialized_data,
+        "status": status.HTTP_200_OK,
+    }, status=status.HTTP_200_OK)
 
 
 @api_view(['DELETE'])
