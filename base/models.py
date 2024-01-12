@@ -17,7 +17,7 @@ class Employee(models.Model):
     Email = models.EmailField()
     DepID = models.ForeignKey(Department, on_delete=models.SET_NULL,null=True)
     JobID = models.ForeignKey(Job, on_delete=models.SET_NULL,null=True)
-    EmpStatus = models.BooleanField(default=True)
+    EmpStatus = models.CharField(max_length=200,default="Hoạt động")
     Gender=models.CharField(max_length=12,null=True)
     RoleID=models.ForeignKey(Role,on_delete=models.SET_NULL,null=True,blank=True)
     TaxCode=models.CharField(max_length=100,null=True)
