@@ -375,7 +375,7 @@ def create_employee(request):
         return Response({"error": f"Role with RoleID {employee_role} does not exist",
                          "status": status.HTTP_400_BAD_REQUEST},
                         status=status.HTTP_400_BAD_REQUEST)
-    if not employee_cccd.isdigit() or 9 != len(employee_cccd) or len(employee_cccd)!=12 :
+    if  len(employee_cccd)!=12 :
         return Response({"error": f"cccdmust be a numeric value with 9 or 12 digits",
                          "status": status.HTTP_400_BAD_REQUEST},
                         status=status.HTTP_400_BAD_REQUEST)
