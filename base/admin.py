@@ -9,6 +9,17 @@ from salary.models import SalaryHistory
 from department.models import Department
 from job.models import Job
 from role.models import Role
+from django.http import HttpResponse
+
+def export_to_txt(modeladmin, request, queryset):
+    content = "\n".join([f"{field}: {getattr(obj, field)}" for obj in queryset for field in obj.__dict__])
+
+    response = HttpResponse(content, content_type='text/plain')
+    response['Content-Disposition'] = 'attachment; filename=exported_data.txt'
+
+    return response
+
+export_to_txt.short_description = "Export selected objects to txt"
 
 # admin.site.register(LeaveType)
 admin.site.register(SalaryHistory)
@@ -84,10 +95,12 @@ admin.site.register(LeaveType,LeaveTypeAdmin)
 class TimeAdmin(admin.ModelAdmin):
     list_display = ["get_name", "TimeIn", "TimeOut","TimeStatus",]
     raw_id_fields = ["EmpID"]
-
+    actions = [export_to_txt,]
     def get_name(self, obj):
         return obj.EmpID.EmpName if obj.EmpID else ''
 
     get_name.short_description = "Employee Name"
 
 admin.site.register(TimeSheet, TimeAdmin)
+
+

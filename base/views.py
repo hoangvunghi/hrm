@@ -376,7 +376,7 @@ def create_employee(request):
                          "status": status.HTTP_400_BAD_REQUEST},
                         status=status.HTTP_400_BAD_REQUEST)
     if  len(employee_cccd)!=12 :
-        return Response({"error": f"cccdmust be a numeric value with 9 or 12 digits",
+        return Response({"error": f"cccd must be a numeric value with 9 or 12 digits",
                          "status": status.HTTP_400_BAD_REQUEST},
                         status=status.HTTP_400_BAD_REQUEST)
     if Employee.objects.filter(CCCD=employee_cccd).exists():

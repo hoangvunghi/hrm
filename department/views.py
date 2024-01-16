@@ -54,7 +54,9 @@ def list_department(request):
 
     serializer = DepartmentSerializer(current_page_data.object_list, many=True)
     serialized_data = serializer.data
-
+    for data in serialized_data:
+        department_id = data['DepID']
+        data['employee_count'] = Employee.objects.filter(DepID=department_id).count()
     return Response({
         "total_rows": depart.count(),
         "current_page": page_index,
