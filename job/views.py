@@ -135,7 +135,7 @@ def delete_job(request, pk):
 @permission_classes([permissions.IsAuthenticatedOrReadOnly, IsAdminOrReadOnly])
 def create_job(request):
     serializer = JobSerializer(data=request.data)
-    required_fields = ['JobName',"JobID","DepID"]
+    required_fields = ['JobName',"Descriptions","DepID"]
     for field in required_fields:
         if not request.data.get(field):
             return Response({"error": f"{field} is required","status":status.HTTP_400_BAD_REQUEST},
