@@ -52,11 +52,23 @@ def list_leave(request):
                          "status": status.HTTP_404_NOT_FOUND},
                         status=status.HTTP_404_NOT_FOUND)
     serialized_data = []
-    for leave_instance in current_page_data.object_list:
-        user_account_data = EmployeeWithLeaveSerializer(leave_instance.EmpID).data
-        leave_data = LeaveWithEmployeeSerializer(leave_instance).data
-        combined_data = {**user_account_data, **leave_data}
-        serialized_data.append(combined_data)
+
+    for leavedata in current_page_data.object_list:
+        serializer = LeaveSerializer(leavedata)
+        data = serializer.data
+
+        leavetypeid = data.get("LeaveTypeID")
+        if leavetypeid is not None:
+            try:
+                leavetypename = LeaveType.objects.get(LeaveTypeID=leavetypeid).LeaveTypeName
+                data["LeaveTypeName"] = leavetypename
+            except LeaveType.DoesNotExist:
+                data["LeaveTypeName"] = None
+        else:
+            data["LeaveTypeName"] = None
+
+        serialized_data.append(data)
+
     return Response({
         "total_rows": leav.count(),
         "current_page": int(page_index),
