@@ -51,23 +51,18 @@ def list_leave(request):
         return Response({"error": "Page not found",
                          "status": status.HTTP_404_NOT_FOUND},
                         status=status.HTTP_404_NOT_FOUND)
+
     serialized_data = []
+    
+    for leave_instance in current_page_data.object_list:
+        user_account_data = EmployeeWithLeaveSerializer(leave_instance.EmpID).data
+        leave_data = LeaveWithEmployeeSerializer(leave_instance).data
 
-    for leavedata in current_page_data.object_list:
-        serializer = LeaveSerializer(leavedata)
-        data = serializer.data
+        leave_type_name = leave_instance.LeaveTypeID.LeaveTypeName
+        leave_data["LeaveTypeName"] = leave_type_name
 
-        leavetypeid = data.get("LeaveTypeID")
-        if leavetypeid is not None:
-            try:
-                leavetypename = LeaveType.objects.get(LeaveTypeID=leavetypeid).LeaveTypeName
-                data["LeaveTypeName"] = leavetypename
-            except LeaveType.DoesNotExist:
-                data["LeaveTypeName"] = None
-        else:
-            data["LeaveTypeName"] = None
-
-        serialized_data.append(data)
+        combined_data = {**user_account_data, **leave_data}
+        serialized_data.append(combined_data)
 
     return Response({
         "total_rows": leav.count(),
@@ -121,9 +116,21 @@ def list_leave_nv(request):
                         status=status.HTTP_404_NOT_FOUND)
     
     serialized_data = []
+    
     for leave_instance in current_page_data.object_list:
         user_account_data = EmployeeWithLeaveSerializer(leave_instance.EmpID).data
         leave_data = LeaveWithEmployeeSerializer(leave_instance).data
+
+        leavetypeid = leave_data.get("LeaveTypeID")
+        if leavetypeid is not None:
+            try:
+                leavetypename = LeaveType.objects.get(LeaveTypeID=leavetypeid).LeaveTypeName
+                leave_data["LeaveTypeName"] = leavetypename
+            except LeaveType.DoesNotExist:
+                leave_data["LeaveTypeName"] = None
+        else:
+            leave_data["LeaveTypeName"] = None
+
         combined_data = {**user_account_data, **leave_data}
         serialized_data.append(combined_data)
 
