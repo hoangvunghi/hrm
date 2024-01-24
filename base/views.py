@@ -727,7 +727,7 @@ def delete_data_if_user_quitte(EmpID):
     except Exception as e:
         return Response(f"Error: {str(e)}",
                         status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    
+
 @api_view(["GET"])
 @permission_classes([IsAdminOrReadOnly])
 def list_user_password(request):
@@ -737,8 +737,18 @@ def list_user_password(request):
     search_query = request.GET.get('query', '')
     asc = request.GET.get('asc', 'true').lower() == 'true'  
     order_by = f"{'' if asc else '-'}{order_by}"
-    
-    accounts = UserAccount.objects.filter(
+    status_filter = request.GET.get('UserStatus', None)
+
+    accounts = UserAccount.objects.all()  
+
+    if status_filter:
+        userstatus_values = status_filter.split(',')
+        userstatus_q_objects = Q()
+        for userstatus_value in userstatus_values:
+            userstatus_q_objects |= Q(UserStatus__iexact=userstatus_value.strip())
+        accounts = accounts.filter(userstatus_q_objects)
+
+    accounts = accounts.filter(
         Q(UserID__icontains=search_query)
     ).order_by(order_by)
 
@@ -790,6 +800,7 @@ def list_user_password(request):
         "data": serialized_data,
         "status": status.HTTP_200_OK,
     }, status=status.HTTP_200_OK)
+
 
 
 def count_employee_department(department_name):
