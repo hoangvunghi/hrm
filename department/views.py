@@ -7,7 +7,6 @@ from .serializers import DepartmentSerializer
 from base.permissions import IsAdminOrReadOnly, IsOwnerOrReadonly
 from django.core.paginator import Paginator, EmptyPage
 from django.db.models import Q
-
 @api_view(["GET"])
 @permission_classes([IsAdminOrReadOnly])
 def list_department(request):
@@ -52,11 +51,19 @@ def list_department(request):
                          "status": status.HTTP_404_NOT_FOUND},
                         status=status.HTTP_404_NOT_FOUND)
 
-    serializer = DepartmentSerializer(current_page_data.object_list, many=True)
-    serialized_data = serializer.data
-    for data in serialized_data:
+    serialized_data = []
+    for data in DepartmentSerializer(current_page_data.object_list, many=True).data:
         department_id = data['DepID']
         data['employee_count'] = Employee.objects.filter(DepID=department_id).count()
+        manage_id = data["ManageID"]
+        try:
+            employee_name = Employee.objects.get(EmpID=manage_id).EmpName
+            data["EmpName"] = employee_name
+        except Employee.DoesNotExist:
+            data["EmpName"] = None
+
+        serialized_data.append(data)
+
     return Response({
         "total_rows": depart.count(),
         "current_page": page_index,
