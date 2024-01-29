@@ -106,9 +106,15 @@ def validate_to_update(obj, data):
 
 def obj_update(obj, validated_data):
     for key, value in validated_data.items():
-        setattr(obj, key, value)
+        if key == 'ManageID':
+            try:
+                employee = Employee.objects.get(EmpID=value)
+                setattr(obj, key, employee)
+            except Employee.DoesNotExist:
+                raise ValueError(f"Invalid ManageID provided: {value}")
+        else:
+            setattr(obj, key, value)
     obj.save()
-
 
 @api_view(['DELETE'])
 @permission_classes([permissions.IsAuthenticatedOrReadOnly, IsAdminOrReadOnly])
