@@ -592,7 +592,7 @@ def query_employee(request):
     serialized_data = []
 
     for employee_data in employees:
-        data = {"id": employee_data.EmpID, "value": employee_data.EmpName}
+        data = {"id": employee_data.EmpID, "value": employee_data.EmpName, "avt": employee_data.PhotoPath.url}
         serialized_data.append(data)
 
     return Response({
