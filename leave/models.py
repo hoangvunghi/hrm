@@ -9,8 +9,20 @@ class LeaveRequest(models.Model):
     LeaveEndDate = models.DateField()
     LeaveTypeID = models.ForeignKey(LeaveType, on_delete=models.CASCADE)
     Reason = models.CharField(max_length=500)
-    LeaveStatus = models.CharField(max_length=255,default=True)
+    STATUS_CHOICES = [
+        ('Chờ xác nhận', 'Chờ xác nhận'),
+        ('Chờ phê duyệt', 'Chờ phê duyệt'),
+        ('Đã phê duyệt', 'Đã phê duyệt'),
+        ('Bị từ chối', 'Bị từ chối'),
+    ]
+
+    LeaveStatus = models.CharField(
+        max_length=255,
+        choices=STATUS_CHOICES,
+        default='Chờ xác nhận',
+    )
     Duration=models.IntegerField()
+    
     def save(self, *args, **kwargs):
         if self.LeaveStartDate and self.LeaveEndDate:
             self.Duration = (self.LeaveEndDate - self.LeaveStartDate).days + 1
