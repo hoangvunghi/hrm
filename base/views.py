@@ -135,39 +135,73 @@ def reset_password_view(request, token):
 #         else:
 #             data = serializer.errors
 #         return Response(data)
-
-@api_view(["POST"]) 
+@api_view(["POST"])
 def user_login_view(request):
     if request.method == "POST":
         try:
             username = request.data.get("username", "").lower()
             password = request.data.get("password", "")
+            
             if not username or not password:
-                return Response({"error": "Username and password are required",
-                                 "status": status.HTTP_400_BAD_REQUEST}, 
-                                status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {"error": "Username and password are required", "status": status.HTTP_400_BAD_REQUEST},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
             user = authenticate(request, username=username, password=password)
+
             if user is not None:
                 if not user.UserStatus:
-                    return Response({"error": "Account has been locked.",
-                                     "status": status.HTTP_401_UNAUTHORIZED}, 
-                                    status=status.HTTP_401_UNAUTHORIZED)
+                    return Response(
+                        {"error": "Account has been locked.", "status": status.HTTP_401_UNAUTHORIZED},
+                        status=status.HTTP_401_UNAUTHORIZED
+                    )
 
                 try:
                     refresh = RefreshToken.for_user(user)
                     access_token = str(refresh.access_token)
                 except TokenError as e:
                     if isinstance(e, InvalidToken) and e.args[0] == "Token has expired":
-                        return Response({"error": "Access token has expired. Please refresh the token.",
-                                         "status": status.HTTP_401_UNAUTHORIZED}, 
-                                        status=status.HTTP_401_UNAUTHORIZED)
+                        return Response(
+                            {"error": "Access token has expired. Please refresh the token.",
+                             "status": status.HTTP_401_UNAUTHORIZED},
+                            status=status.HTTP_401_UNAUTHORIZED
+                        )
                     else:
-                        return Response({"error": "Invalid token.",
-                                         "status": status.HTTP_401_UNAUTHORIZED},
-                                        status=status.HTTP_401_UNAUTHORIZED)
+                        return Response(
+                            {"error": "Invalid token.", "status": status.HTTP_401_UNAUTHORIZED},
+                            status=status.HTTP_401_UNAUTHORIZED
+                        )
+
                 employee_data = EmployeeSerializer(user.EmpID).data
-                
                 data = {
+                    "RoleID": employee_data.get("RoleID"),
+                    "JobID": employee_data.get("JobID"),
+                    "DepID": employee_data.get("DepID")
+                }
+
+                try:
+                    role_name = Role.objects.get(RoleID=data["RoleID"]).RoleName
+                    data["RoleName"] = role_name
+                except Role.DoesNotExist:
+                    data["RoleName"] = None
+
+                try:
+                    job_name = Job.objects.get(JobID=data["JobID"]).JobName
+                    data["JobName"] = job_name
+                except Job.DoesNotExist:
+                    data["JobName"] = None
+
+                try:
+                    dep_name = Department.objects.get(DepID=data["DepID"]).DepName
+                    data["DepName"] = dep_name
+                except Department.DoesNotExist:
+                    data["DepName"] = None
+
+                # Assuming employee_data is a dictionary, not a list
+                employee_data.update(data)
+
+                response_data = {
                     "response": "Login successful",
                     "data": employee_data,
                     'token': {
@@ -176,15 +210,18 @@ def user_login_view(request):
                     },
                     "status": status.HTTP_200_OK,
                 }
-                return Response(data, status=status.HTTP_200_OK)
+                return Response(response_data, status=status.HTTP_200_OK)
             else:
-                return Response({'error': 'Invalid username or password',
-                                 "status": status.HTTP_401_UNAUTHORIZED}, 
-                                status=status.HTTP_401_UNAUTHORIZED)
+                return Response(
+                    {'error': 'Invalid username or password', "status": status.HTTP_401_UNAUTHORIZED},
+                    status=status.HTTP_401_UNAUTHORIZED
+                )
+
         except Exception as e:
-            return Response({'error': str(e),
-                             "status": status.HTTP_400_BAD_REQUEST}, 
-                            status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {'error': str(e), "status": status.HTTP_400_BAD_REQUEST},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
 
 @api_view(['POST'])
