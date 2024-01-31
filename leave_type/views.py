@@ -9,6 +9,7 @@ from base.permissions import IsAdminOrReadOnly, IsOwnerOrReadonly
 from django.http import Http404
 from base.views import is_valid_type,obj_update
 from django.core.paginator import Paginator,EmptyPage
+from django.db.models import Q
 
 
 
@@ -144,3 +145,20 @@ def update_leavetype(request, pk):
         obj_update(leavetype, request.data)
         serializer=LeaveTypeSerializer(leavetype)
         return Response({"messeger": "update succesfull", "data": serializer.data}, status=status.HTTP_200_OK)
+    
+    
+    
+@api_view(["GET"])
+@permission_classes([IsAdminOrReadOnly])
+def query_leavetype(request):
+    search_query = request.GET.get('query', '')
+    leavetypes = LeaveType.objects.filter(
+        Q(LeaveTypeName__icontains=search_query)
+    ).order_by('LeaveTypeID')
+
+    serialized_data = [{"id": leavetype_data.LeaveTypeID, "value": leavetype_data.LeaveTypeName} for leavetype_data in leavetypes]
+
+    return Response({
+        "data": serialized_data,
+        "status": status.HTTP_200_OK,
+    }, status=status.HTTP_200_OK)
