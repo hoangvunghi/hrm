@@ -7,4 +7,6 @@ urlpatterns=[
     path('leave/update-leave/<int:pk>', views.update_leave, name='update-leave'),
     path('leave/delete-leave/<int:pk>', views.delete_leave, name='delete-leave'),
     path('leave/list-leave-staff', views.list_leave_nv, name='list-leave-nv'),
+    path('leave/leave-remainder/<int:pk>', views.get_leave_remainder, name='leave-remainder'),
+
 ]

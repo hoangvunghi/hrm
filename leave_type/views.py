@@ -81,20 +81,13 @@ def delete_leavetype(request, pk):
 @permission_classes([permissions.IsAuthenticatedOrReadOnly, IsAdminOrReadOnly])
 def create_leavetype(request):
     serializer = LeaveTypeSerializer(data=request.data)
-    required_fields = ["LeaveTypeName","Subsidize","LeaveTypeDescription","LimitedDuration"]
+    required_fields = ["LeaveTypeName","LeaveTypeDescription","LimitedDuration"]
 
     for field in required_fields:
         if not request.data.get(field):
             return Response({"error": f"{field.capitalize()} is required","status":status.HTTP_400_BAD_REQUEST},
                             status=status.HTTP_400_BAD_REQUEST)
     limit = request.data.get('LimitedDuration', None)
-    Subsidize = request.data.get('Subsidize')
-    try:
-        float(Subsidize)
-    except ValueError:
-        return Response({"error": "Subsidize must be a valid number or string",
-                             "status": status.HTTP_400_BAD_REQUEST},
-                            status=status.HTTP_400_BAD_REQUEST)
     if not limit.isdigit():
         return Response({"error": "LimitedDuration must be a valid integer", "status": status.HTTP_400_BAD_REQUEST},
                         status=status.HTTP_400_BAD_REQUEST)

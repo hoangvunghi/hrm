@@ -9,7 +9,8 @@ from base.permissions import IsAdminOrReadOnly, IsOwnerOrReadonly
 from base.views import obj_update
 from django.core.paginator import Paginator,EmptyPage
 from leave_type.models import LeaveType
-
+from django.db.models import Sum
+from datetime import datetime, timedelta
 
 
 @api_view(["GET"])
@@ -164,8 +165,7 @@ def delete_leave(request, pk):
                              "status": status.HTTP_400_BAD_REQUEST}, 
                             status=status.HTTP_400_BAD_REQUEST)
             
-from django.db.models import Sum
-from datetime import datetime, timedelta
+
 
 def total_leave_days_in_year(employee_id, year):
     first_day = datetime(year, 1, 1)
@@ -178,63 +178,11 @@ def total_leave_days_in_year(employee_id, year):
         total_leave_days = 0
     return total_leave_days
 from django.db import transaction
+from django.db import transaction
+from rest_framework import status
+from rest_framework.response import Response
+from django.db import models
 
-
-@api_view(['POST'])
-@permission_classes([permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadonly])
-def create_leave(request):
-    employee_id = request.user.EmpID.EmpID
-    request.data['EmpID'] = employee_id
-    current_year = datetime.now().year
-    total_leave_days = total_leave_days_in_year(employee_id, current_year)
-    requested_days = request.data.get('Duration', 0)
-    if total_leave_days + requested_days > 30:  
-        return Response({"error": "Exceeds the allowed leave limit for the year",
-                         "status": status.HTTP_400_BAD_REQUEST},
-                        status=status.HTTP_400_BAD_REQUEST)
-    date_fields = ['LeaveStartDate', 'LeaveEndDate']
-    for key in date_fields:
-        if key in request.data and request.data[key]:
-            try:
-                day, month, year = map(int, request.data[key].split('/'))
-                request.data[key] = f"{year:04d}-{month:02d}-{day:02d}"
-            except (ValueError, IndexError):
-                return Response({"error": f"Invalid date format for {key}. It must be in dd/mm/yyyy format.",
-                                 "status": status.HTTP_400_BAD_REQUEST},
-                                status=status.HTTP_400_BAD_REQUEST)
-    request.data['Duration'] = requested_days
-    serializer = LeaveSerializer(data=request.data)
-    required_fields = ["LeaveTypeID", "LeaveStartDate", "LeaveEndDate", "Reason"]
-    for field in required_fields:
-        if field not in request.data:
-            return Response({"error": f"{field.capitalize()} is required",
-                             "status": status.HTTP_400_BAD_REQUEST},
-                            status=status.HTTP_400_BAD_REQUEST)
-    leavetypeid = request.data.get('LeaveTypeID', None)
-    try:
-        leavetypeid = LeaveType.objects.get(LeaveTypeID=leavetypeid)
-    except LeaveType.DoesNotExist:
-        return Response({"error": f"LeaveType with LeaveTypeID {leavetypeid} does not exist.",
-                         "status": status.HTTP_400_BAD_REQUEST},
-                        status=status.HTTP_400_BAD_REQUEST)
-    start = datetime.strptime(request.data['LeaveStartDate'], '%Y-%m-%d')
-    end = datetime.strptime(request.data['LeaveEndDate'], '%Y-%m-%d')
-    duration = (end - start).days+1
-    request.data['Duration'] = requested_days
-    if serializer.is_valid():
-        total_leave_days_after = total_leave_days_in_year(employee_id, current_year)+duration
-        if total_leave_days_after >= 30:
-            return Response({"error": "Exceeds the allowed leave limit for the year",
-                             "status": status.HTTP_400_BAD_REQUEST},
-                            status=status.HTTP_400_BAD_REQUEST)
-        with transaction.atomic():
-            serializer.save()
-        return Response({"message": "Leave Request created successfully", "data": serializer.data,
-                         "status": status.HTTP_201_CREATED},
-                        status=status.HTTP_201_CREATED)
-    
-    return Response({"error": str(serializer.errors), "status": status.HTTP_400_BAD_REQUEST},
-                    status=status.HTTP_400_BAD_REQUEST)
 
 
 def validate_to_update(obj, data):
@@ -277,3 +225,120 @@ def update_leave(request, pk):
         obj_update(leave, request.data)
         serializer=LeaveSerializer(leave)
         return Response({"messeger": "update succesfull", "data": serializer.data}, status=status.HTTP_200_OK)
+    
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated, IsOwnerOrReadonly])
+def get_leave_remainder(request, pk):
+    try:
+        employee = Employee.objects.get(EmpID=pk)
+    except Employee.DoesNotExist:
+        return Response({"error": "Employee not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    leave_types = LeaveType.objects.all()
+    leave_remainder = {}
+
+    for leave_type in leave_types:
+        total_taken_leave_days = LeaveRequest.objects.filter(EmpID=employee, LeaveTypeID=leave_type, LeaveStatus='Đã phê duyệt').aggregate(total=Sum('Duration'))['total']
+        if total_taken_leave_days is None:
+            total_taken_leave_days = 0
+
+        pending_approval_days = LeaveRequest.objects.filter(EmpID=employee, LeaveTypeID=leave_type, LeaveStatus='Chờ phê duyệt').aggregate(total=Sum('Duration'))['total']
+        pending1_approval_days = LeaveRequest.objects.filter(EmpID=employee, LeaveTypeID=leave_type, LeaveStatus='Chờ xác nhận').aggregate(total=Sum('Duration'))['total']
+
+        if pending_approval_days is None:
+            pending_approval_days = 0
+        if pending1_approval_days is None:
+            pending1_approval_days = 0
+
+        remaining_leave_days = max(0, leave_type.LimitedDuration - total_taken_leave_days - pending1_approval_days)
+        
+        leave_remainder[leave_type.LeaveTypeName] = {
+            "cho_phep": leave_type.LimitedDuration,
+            "da_dung": total_taken_leave_days,
+            "cho_xac_nhan": pending1_approval_days,
+            "cho_phe_duyet": pending_approval_days,
+            "kha_dung": remaining_leave_days
+        }
+
+    return Response({
+        "employee_id": employee.EmpID,
+        "leave_remainder": leave_remainder,
+        "status": status.HTTP_200_OK
+    }, status=status.HTTP_200_OK)
+from django.db.models.functions import Coalesce
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+@transaction.atomic
+def create_leave(request):
+    data = request.data
+    employee_id = request.user.EmpID.EmpID
+
+    try:
+        leave_type = LeaveType.objects.get(LeaveTypeID=data['LeaveTypeID'])
+    except LeaveType.DoesNotExist:
+        return Response({"error": "Leave type not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    try:
+        employee = Employee.objects.get(EmpID=employee_id)
+    except Employee.DoesNotExist:
+        return Response({"error": "Employee not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    leave_start_date_str = data['LeaveStartDate']
+    leave_end_date_str = data['LeaveEndDate']
+
+    try:
+        leave_start_date = datetime.strptime(leave_start_date_str, '%d/%m/%Y')
+        leave_end_date = datetime.strptime(leave_end_date_str, '%d/%m/%Y')
+    except ValueError:
+        return Response({"error": "Invalid date format. It must be in dd/mm/yyyy format."},
+                        status=status.HTTP_400_BAD_REQUEST)
+
+    duration = (leave_end_date - leave_start_date).days + 1
+    remaining_leave_days = get_leave_remainder(employee_id, leave_type)
+
+    if duration > remaining_leave_days:
+        return Response({"error": "Not enough remaining leave days for this leave type"},
+                        status=status.HTTP_400_BAD_REQUEST)
+
+    leave_request_data = {
+        'EmpID': employee,
+        'LeaveStartDate': leave_start_date,
+        'LeaveEndDate': leave_end_date,
+        'LeaveTypeID': leave_type,
+        'Reason': data['Reason'],
+        'LeaveStatus': 'Chờ xác nhận',
+    }
+
+    leave_request = LeaveRequest.objects.create(**leave_request_data)
+
+    response_data = {
+        "LeaveRequestID": leave_request.LeaveRequestID,
+        "EmpID": employee_id,
+        "LeaveTypeID": leave_type.LeaveTypeID,
+        "LeaveStartDate": leave_start_date_str,
+        "LeaveEndDate": leave_end_date_str,
+        "Reason": data['Reason'],
+        "LeaveStatus": 'Chờ xác nhận',
+    }
+    data={
+        "message":"successfully",
+        "data":response_data,
+        "status":status.HTTP_201_CREATED
+    }
+    return Response(data, status=status.HTTP_201_CREATED)
+
+def get_leave_remainder(employee_id, leave_type):
+    total_taken_leave_days = LeaveRequest.objects.filter(
+        EmpID=employee_id,
+        LeaveTypeID=leave_type,
+        LeaveStatus='Đã phê duyệt'
+    ).aggregate(total=Coalesce(Sum('Duration'), 0))['total']
+
+    pending1_approval_days = LeaveRequest.objects.filter(
+        EmpID=employee_id,
+        LeaveTypeID=leave_type,
+        LeaveStatus='Chờ xác nhận'
+    ).aggregate(total=Coalesce(Sum('Duration'), 0))['total']
+
+    return max(0, leave_type.LimitedDuration - total_taken_leave_days - pending1_approval_days)
