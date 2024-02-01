@@ -266,6 +266,25 @@ def get_leave_remainder(request, pk):
         "status": status.HTTP_200_OK
     }, status=status.HTTP_200_OK)
 from django.db.models.functions import Coalesce
+from django.utils import timezone
+
+
+def get_remaining_leave_days_for_year(employee_id, leave_type, year):
+    total_taken_leave_days = LeaveRequest.objects.filter(
+        EmpID=employee_id,
+        LeaveTypeID=leave_type,
+        LeaveStartDate__year=year,
+        LeaveStatus='Đã phê duyệt'
+    ).aggregate(total=Coalesce(Sum('Duration'), 0))['total']
+
+    pending1_approval_days = LeaveRequest.objects.filter(
+        EmpID=employee_id,
+        LeaveTypeID=leave_type,
+        LeaveStartDate__year=year,
+        LeaveStatus='Chờ xác nhận'
+    ).aggregate(total=Coalesce(Sum('Duration'), 0))['total']
+
+    return max(0, leave_type.LimitedDuration - total_taken_leave_days - pending1_approval_days)
 
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticated])
@@ -294,8 +313,10 @@ def create_leave(request):
         return Response({"error": "Invalid date format. It must be in dd/mm/yyyy format."},
                         status=status.HTTP_400_BAD_REQUEST)
 
+    current_year = timezone.now().year
+    remaining_leave_days = get_remaining_leave_days_for_year(employee_id, leave_type, current_year)
+
     duration = (leave_end_date - leave_start_date).days + 1
-    remaining_leave_days = get_leave_remainder(employee_id, leave_type)
 
     if duration > remaining_leave_days:
         return Response({"error": "Not enough remaining leave days for this leave type"},
@@ -321,24 +342,15 @@ def create_leave(request):
         "Reason": data['Reason'],
         "LeaveStatus": 'Chờ xác nhận',
     }
+
+    if leave_start_date.year == current_year:
+        remaining_leave_days = get_remaining_leave_days_for_year(employee_id, leave_type, current_year)
+    
     data={
-        "message":"successfully",
-        "data":response_data,
-        "status":status.HTTP_201_CREATED
+        "message": "successfully",
+        "data": response_data,
+        "remaining_leave_days": remaining_leave_days,
+        "status": status.HTTP_201_CREATED
     }
     return Response(data, status=status.HTTP_201_CREATED)
 
-def get_leave_remainder(employee_id, leave_type):
-    total_taken_leave_days = LeaveRequest.objects.filter(
-        EmpID=employee_id,
-        LeaveTypeID=leave_type,
-        LeaveStatus='Đã phê duyệt'
-    ).aggregate(total=Coalesce(Sum('Duration'), 0))['total']
-
-    pending1_approval_days = LeaveRequest.objects.filter(
-        EmpID=employee_id,
-        LeaveTypeID=leave_type,
-        LeaveStatus='Chờ xác nhận'
-    ).aggregate(total=Coalesce(Sum('Duration'), 0))['total']
-
-    return max(0, leave_type.LimitedDuration - total_taken_leave_days - pending1_approval_days)

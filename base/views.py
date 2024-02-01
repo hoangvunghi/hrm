@@ -1,4 +1,3 @@
-from django.http import Http404, HttpResponse, HttpResponseForbidden,JsonResponse
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework import status, permissions
@@ -23,7 +22,6 @@ from django.core.paginator import Paginator,EmptyPage
 from django.contrib.auth.hashers import make_password
 from django.conf import settings
 from django.core.mail import send_mail
-from django.http import HttpResponse
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
@@ -32,10 +30,32 @@ from django.core.signing import dumps,loads
 from datetime import datetime,timedelta
 import base64
 from django.core.files.base import ContentFile
+from django.utils import timezone
+
+
+
+@api_view(["GET"])
+def get_birthday_employee(request):
+    today = timezone.now()
+    three_days_later = today + timedelta(days=3)
+    employees = Employee.objects.filter(BirthDate__range=[today.date(), three_days_later.date()])
+    number=employees.count()
+    employee_data = [
+        {
+            'EmpName': employee.EmpName,
+            "Date of birth":employee.BirthDate.strftime('%d-%m-%Y'),
+            'The number of days remaining until the birthday:': (employee.BirthDate - today).days
+        }
+        for employee in employees
+    ]
+    return Response({"message":f"{number} people's birthdays approaching","data":employee_data,
+                     "status":status.HTTP_200_OK}, status=status.HTTP_200_OK)
 
 @api_view(["GET",])
 def a(request):
-    return Response("hello")
+    birthday_response = get_birthday_employee(request)
+
+    return birthday_response
 
 UserAccount = get_user_model()
 @api_view(["POST"])
@@ -846,7 +866,7 @@ def count_employee_department(department_name):
     return employee_count
 
 
-from django.utils import timezone
+
 
 @api_view(["GET"])
 def get_birthday_employee(request):
