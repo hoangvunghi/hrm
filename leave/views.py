@@ -105,7 +105,13 @@ def list_leave_nv(request):
     current_employee = request.user.EmpID.EmpID
 
     leav = LeaveRequest.objects.filter(EmpID=current_employee)
+    leave_type_name = request.GET.get('LeaveTypeName', '')
+    if leave_type_name:
+        leav = leav.filter(LeaveTypeID__LeaveTypeName__icontains=leave_type_name)
 
+    leave_status = request.GET.get('LeaveStatus', '')
+    if leave_status:
+        leav = leav.filter(LeaveStatus__icontains=leave_status)
 
     total_taken_leave_days = leav.aggregate(total=Sum('Duration'))['total']
     if total_taken_leave_days is None:
