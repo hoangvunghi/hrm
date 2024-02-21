@@ -10,7 +10,7 @@ from django.http import Http404
 from base.views import is_valid_type,obj_update
 from django.core.paginator import Paginator,EmptyPage
 from django.db.models import Q
-
+import re
 
 
 @api_view(["GET"])
@@ -88,7 +88,7 @@ def create_leavetype(request):
             return Response({"error": f"{field.capitalize()} is required","status":status.HTTP_400_BAD_REQUEST},
                             status=status.HTTP_400_BAD_REQUEST)
     limit = request.data.get('LimitedDuration', None)
-    if not limit.isdigit():
+    if not re.match("^[0-9]+$", limit):
         return Response({"error": "LimitedDuration must be a valid integer", "status": status.HTTP_400_BAD_REQUEST},
                         status=status.HTTP_400_BAD_REQUEST)
 
