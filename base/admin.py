@@ -60,8 +60,7 @@ admin.site.register(Employee, EmployeeAdmin)
 
 
 class DepartmentAdmin(admin.ModelAdmin):
-    list_display = ["DepID", "DepName",]
-    raw_id_fields = ["ManageID",]
+    list_display = ["DepID", "DepName","ManageID"]
 
 admin.site.register(Department, DepartmentAdmin)
 

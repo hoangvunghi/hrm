@@ -19,6 +19,8 @@ def list_leave(request):
     page_index = request.GET.get('pageIndex', 1)
     page_size = request.GET.get('pageSize', 10)
     order_by = request.GET.get('sort_by', 'LeaveRequestID')
+    leave_type_name = request.GET.get('LeaveTypeName', '')
+    leave_status = request.GET.get('LeaveStatus', '')
     search_query = request.GET.get('query', '')
     asc = request.GET.get('asc', 'true').lower() == 'true'  
     order_by = f"{'' if asc else '-'}{order_by}"
@@ -44,6 +46,12 @@ def list_leave(request):
                             status=status.HTTP_400_BAD_REQUEST)
     else:
         leav = LeaveRequest.objects.all()
+    if leave_type_name:
+        leav = leav.filter(LeaveTypeID__LeaveTypeName__icontains=leave_type_name)
+
+    if leave_status:
+        leav = leav.filter(LeaveStatus__icontains=leave_status)
+    
     leav = leav.order_by(order_by)
     paginator = Paginator(leav, page_size)
     try:
