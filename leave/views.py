@@ -200,20 +200,25 @@ from django.db import models
 
 
 def validate_to_update(obj, data):
-    errors={}
-    dict=['LeaveRequestID', 'EmpID']
+    errors = {}
+    dict_keys = ['LeaveRequestID', 'EmpID']
     date_fields = ['LeaveStartDate', 'LeaveEndDate']
-    if key in date_fields:
+    
+    for key in data:
+        value = data[key]
+        
+        if key in date_fields:
             try:
                 day, month, year = map(int, value.split('/'))
                 data[key] = f"{year:04d}-{month:02d}-{day:02d}"
             except (ValueError, IndexError):
                 errors[key] = f"Invalid date format for {key}. It must be in dd/mm/yyyy format." 
-    for key in data:
-        value= data[key]
-        if key in dict:
-            errors[key]= f"{key} not allowed to change"        
+        
+        if key in dict_keys:
+            errors[key] = f"{key} not allowed to change"
+        
     return errors
+
 
 
 
