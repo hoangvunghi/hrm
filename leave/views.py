@@ -201,26 +201,36 @@ from django.db import models
 
 def validate_to_update(obj, data):
     errors = {}
-    dict_keys = ['LeaveRequestID', 'EmpID']
+    allowed_fields = ['LeaveRequestID', 'EmpID']
     date_fields = ['LeaveStartDate', 'LeaveEndDate']
-    
+
     for key in data:
         value = data[key]
-        
+
         if key in date_fields:
             try:
                 day, month, year = map(int, value.split('/'))
                 data[key] = f"{year:04d}-{month:02d}-{day:02d}"
             except (ValueError, IndexError):
-                errors[key] = f"Invalid date format for {key}. It must be in dd/mm/yyyy format." 
-        
-        if key in dict_keys:
+                errors[key] = f"Invalid date format for {key}. It must be in dd/mm/yyyy format."
+
+        if key in allowed_fields:
             errors[key] = f"{key} not allowed to change"
-        
+
     return errors
 
 
-
+def obj_update(obj, validated_data):
+    for key, value in validated_data.items():
+        if key == 'LeaveTypeID':
+            try:
+                leavetype = LeaveType.objects.get(LeaveTypeID=value)
+                setattr(obj, key, leavetype)
+            except LeaveType.DoesNotExist:
+                raise ValueError(f"Invalid LeaveTypeID provided: {value}")
+        else:
+            setattr(obj, key, value)
+    obj.save()
 
 @api_view(['PATCH'])
 @permission_classes([permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadonly])

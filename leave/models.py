@@ -1,5 +1,6 @@
 from django.db import models
 from base.models import Employee
+from datetime import datetime
 from leave_type.models import LeaveType
 # Create your models here.
 class LeaveRequest(models.Model):
@@ -25,7 +26,12 @@ class LeaveRequest(models.Model):
     
     def save(self, *args, **kwargs):
         if self.LeaveStartDate and self.LeaveEndDate:
-            self.Duration = (self.LeaveEndDate - self.LeaveStartDate).days + 1
-        self.Duration = int(self.Duration)
+            start_date = datetime.strptime(self.LeaveStartDate, '%Y-%m-%d')
+            end_date = datetime.strptime(self.LeaveEndDate, '%Y-%m-%d')
+            
+            self.Duration = (end_date - start_date).days + 1
+        else:
+            self.Duration = 0
+        
         super(LeaveRequest, self).save(*args, **kwargs)
         
