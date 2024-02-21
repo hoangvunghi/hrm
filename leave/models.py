@@ -13,7 +13,7 @@ class LeaveRequest(models.Model):
         ('Chờ xác nhận', 'Chờ xác nhận'),
         ('Chờ phê duyệt', 'Chờ phê duyệt'),
         ('Đã phê duyệt', 'Đã phê duyệt'),
-        ('Bị từ chối', 'Bị từ chối'),
+        ('Đã từ chối', 'Đã từ chối'),
     ]
 
     LeaveStatus = models.CharField(
