@@ -92,7 +92,7 @@ admin.site.register(LeaveType,LeaveTypeAdmin)
 
 
 class TimeAdmin(admin.ModelAdmin):
-    list_display = ["get_name", "TimeIn", "TimeOut","TimeStatus",]
+    list_display = ["get_name", "TimeIn", "TimeOut","TimeStatus","serial_number"]
     raw_id_fields = ["EmpID"]
     actions = [export_to_txt,]
     def get_name(self, obj):

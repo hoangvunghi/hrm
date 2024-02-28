@@ -10,6 +10,7 @@ class TimeSheet(models.Model):
     EmpID = models.ForeignKey(Employee, on_delete=models.CASCADE)    
     data_dict = models.JSONField(default=dict)
     TimeStatus=models.CharField(max_length=100)
+    serial_number=models.CharField(max_length=200,null=True)
     # STATUS_CHOICES = [
     #     ('ontime', 'OnTime'),
     #     ('late', 'Late'),
