@@ -32,6 +32,24 @@ import base64
 from django.core.files.base import ContentFile
 from django.utils import timezone
 
+@api_view(["POST"])
+def refresh_token_view(request):
+    if request.method == "POST":
+        refresh_token = request.data.get("refresh_token")
+
+        if not refresh_token:
+            return Response({"error": "Refresh token is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            # Validate the refresh token
+            refresh = RefreshToken(refresh_token)
+            access_token = str(refresh.access_token)
+            return Response({"access_token": access_token}, status=status.HTTP_200_OK)
+        except TokenError as e:
+            if isinstance(e, InvalidToken) and e.args[0] == "Token is blacklisted":
+                return Response({"error": "Refresh token is expired or blacklisted"}, status=status.HTTP_401_UNAUTHORIZED)
+            else:
+                return Response({"error": "Invalid refresh token"}, status=status.HTTP_401_UNAUTHORIZED)
 
 
 @api_view(["GET"])
