@@ -7,7 +7,7 @@ from django.contrib import admin
 
  
 urlpatterns=[
-    path('api/refresh-token/', views.refresh_token_view, name='refresh_token'),
+    path('account/refresh-token/', views.refresh_token_view, name='refresh_token'),
     path("login", views.user_login_view, name="login"),
     # path('employee/create-useraccount', views.create_useraccount, name='create-account'),
     path("employee/list-account",views.find_employee,name="list-EmpID"),
